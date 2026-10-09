@@ -57,7 +57,13 @@ def cands(align, padded):
 
 
 def cost(dev, dt, Mp, Np, Kp, tm, tn, tk, use_llc):
-    """Time model for an output-stationary tile loop spread over the device's units."""
+    """Time model for an output-stationary tile loop spread over the device's units.
+
+    Two data-movement terms: DRAM traffic (after tile-group reuse in a shared cache, if any) and, for
+    cache-backed GPUs, the tile-level traffic the SMs pull from that cache (assumed `llc_bw_factor` x DRAM
+    bandwidth). Without the second term nothing would punish tiny tiles. For scratchpad devices, DMA rows
+    shorter than the burst size run below full bandwidth.
+    """
     in_b, out_b = DT[dt]
     units = dev["units"]["count"]
     n_m, n_n = cdiv(Mp, tm), cdiv(Np, tn)
@@ -77,14 +83,20 @@ def cost(dev, dt, Mp, Np, Kp, tm, tn, tk, use_llc):
     t_comp = rounds * 2 * tm * tn * Kp / (peak / units) if peak else None
     lat = ((dev.get("dma") or {}).get("latency_ns")) or 0
     t_lat = rounds * (2 * cdiv(Kp, tk) + 1) * lat * 1e-9
-    t_dma = traffic / bw + t_lat if bw else None
+    dma = dev.get("dma") or {}
+    eff = min(1.0, min(tk, tn) * in_b / dma.get("burst_bytes", 256)) if not use_llc else 1.0
+    traffic_eff = traffic / eff
+    t_dma = traffic_eff / bw + t_lat if bw else None
+    if t_dma is not None and llc:
+        tile_traffic = Mp * Kp * in_b * n_n + Kp * Np * in_b * n_m + Mp * Np * out_b
+        t_dma = max(t_dma, tile_traffic / (dev.get("llc_bw_factor", 3) * bw))
     t = max(t_comp, t_dma) if (t_comp is not None and t_dma is not None) else None
-    return dict(n_m=n_m, n_n=n_n, tiles=tiles, rounds=rounds, group=g, gm=gm, gn=gn, traffic=traffic,
+    return dict(n_m=n_m, n_n=n_n, tiles=tiles, rounds=rounds, group=g, gm=gm, gn=gn, traffic=traffic, traffic_eff=traffic_eff,
                 t_comp=t_comp, t_dma=t_dma, t=t)
 
 
 def objective(c, tm, tn):
-    return (c["t"] if c["t"] is not None else c["traffic"], c["traffic"], -tm * tn)
+    return (c["t"] if c["t"] is not None else c["traffic_eff"], c["traffic_eff"], -tm * tn)
 
 
 def finish(dev, dt, M, N, K, Mp, Np, Kp, c, plan):
@@ -140,8 +152,8 @@ def plan_cpu(dev, dt, M, N, K):
     l1, l2, l3 = role_bytes(dev, "l1"), role_bytes(dev, "l2"), role_bytes(dev, "l3")
     kc = max(8, int(0.5 * l1 // ((mr + nr) * in_b)) // k_align * k_align)
     kc = min(kc, rup(K, k_align))
-    mc = min(max(mr, int(0.5 * l2 // (kc * in_b)) // mr * mr), rup(M, mr))
-    nc = min(max(nr, int(0.25 * l3 // (kc * in_b)) // nr * nr), rup(N, nr)) if l3 else rup(N, nr)
+    mc = min(max(mr, int(0.5 * l2 // (kc * in_b)) // mr * mr), M)
+    nc = min(max(nr, int(0.25 * l3 // (kc * in_b)) // nr * nr), N) if l3 else N
     c_passes = 1 if M * nc * out_b <= 0.25 * l3 else 2 * cdiv(K, kc) - 1
     traffic = M * K * in_b * cdiv(N, nc) + K * N * in_b + M * N * out_b * c_passes
     peak, bw = peak_flops(dev, dt), dram_bw(dev)
@@ -188,7 +200,7 @@ def plan_gpu(dev, dt, M, N, K):
                 Mp, Np, Kp = rup(M, tm), rup(N, tn), rup(K, tk)
                 c = cost(dev, dt, Mp, Np, Kp, tm, tn, tk, use_llc=True)
                 bps = max(1, min(smem_cap // smem_blk, g["regs_per_unit"] // (threads * (acc + 48)), 16))
-                key = objective(c, tm, tn)
+                key = objective(c, tm, tn) + (-tk,)
                 if best is None or key < best[0]:
                     best = (key, tm, tn, tk, threads, acc, smem_blk, bps, Mp, Np, Kp, c)
     if best is None:

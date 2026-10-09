@@ -56,11 +56,11 @@ def plan_text(dev, p):
             use, cap = fmt_bytes(t["use"]), fmt_bytes(t["cap"]) if t["cap"] else ""
         out.append(f"  {t['level']:<30}{t['shape']:<44}{use:>10}{cap:>11}")
     out += ["", "Why:"] + [f"  - {n}" for n in p["notes"]]
-    out += ["", "Model estimate (not a measurement):",
+    out += ["", "Roofline-style estimate (an upper bound, not a measurement; assumes the micro-kernel reaches peak):",
             f"  arithmetic intensity {p['ai']:.1f} FLOP/B" + (f" vs machine balance {p['balance']:.1f}" if p["balance"] else " (no peak data)"),
             f"  DRAM traffic {fmt_bytes(int(p['traffic']))}, compute {fmt_time(p['t_comp'])}, data movement {fmt_time(p['t_dma'])}"]
     if p["pct_peak"] is not None:
-        out.append(f"  => {p['bound']}-bound, about {p['pct_peak']:.0f}% of peak, total {fmt_time(p['t'])}")
+        out.append(f"  => {p['bound']}-bound, at most about {p['pct_peak']:.0f}% of peak, total {fmt_time(p['t'])}")
     return "\n".join(out)
 
 
@@ -148,8 +148,8 @@ def main(argv=None):
             rows, skipped = compare_rows(devs, a.dtype, a.m, a.n, a.k, set(a.ids.split(",")) if a.ids else None)
             print(f"GEMM M={a.m} N={a.n} K={a.k} {a.dtype}\n")
             print(table(rows, a.md))
-            for i, why in skipped:
-                print(f"\n(skipped {i}: {why})")
+            if skipped:
+                print("\nno native %s path: %s" % (a.dtype, ", ".join(i for i, _ in skipped)))
         elif a.cmd == "audit":
             bad = 0
             for i, problems, missing in D.audit(devs):

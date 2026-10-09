@@ -266,7 +266,7 @@
       "memory": [
         {"name": "SPM", "role": "spm", "kb": 64, "scope": "per_unit"}
       ],
-      "dma": {"latency_ns": 40, "align_bytes": 32},
+      "dma": {"latency_ns": 40, "align_bytes": 32, "burst_bytes": 16},
       "programming": ["MN1 assembly"],
       "gotchas": ["Defined by docs/manual.md in ../mock-npu-bench; clock of 1 GHz is an assumption of this atlas"],
       "sources_to_check": ["../mock-npu-bench/docs/manual.md"],
