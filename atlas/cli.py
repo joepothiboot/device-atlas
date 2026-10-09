@@ -23,6 +23,7 @@ def fmt_time(t):
 def show(dev):
     out = [f"{dev['name']}  [{' > '.join(dev['path'])}]", f"  id: {dev['id']}   archetype: {dev['archetype']} "
            f"({D.ARCHETYPES[dev['archetype']]})",
+           f"  segment: {dev['segment']}", "  used for:"] + [f"    - {u}" for u in dev["used_for"]] + [
            f"  units: {dev['units']['count']} x {dev['units']['name']}   dtypes: {', '.join(dev['dtypes'])}"]
     if dev.get("vector"):
         out.append(f"  vector: {dev['vector']['bits']}-bit, {dev['vector']['regs']} registers")

@@ -19,6 +19,8 @@
       "programming": ["C++ intrinsics", "BLIS / oneDNN / MKL", "LLVM auto-vectorizer", "MLIR vector dialect"],
       "gotchas": ["Only 16 vector registers: the micro-kernel is a register-allocation problem", "Edge tiles need separate small kernels (AVX2 masking is awkward)", "Power-of-two strides hit cache associativity conflicts"],
       "sources_to_check": ["Intel optimization manual", "Agner Fog microarchitecture tables", "BLIS kernel configs"],
+      "segment": "Client and mobile",
+      "used_for": ["Everyday computing on desktops, laptops and many servers", "Running smaller models on the CPU, and pre/post-processing around accelerators", "The baseline most compilers and math libraries (BLAS, oneDNN) are written and tested against"],
       "verified": false
     },
     {
@@ -39,6 +41,8 @@
       "programming": ["C++ intrinsics (_tile_*)", "oneDNN", "LLVM x86 AMX backend", "MLIR amx dialect"],
       "gotchas": ["Tile palette must be configured (ldtilecfg) and the OS must grant AMX state", "bf16 B operand wants a VNNI layout (k pairs interleaved): a data-layout transform, not just a tile size", "AMX tile shape (16 x 64 B) fixes the micro-kernel; registers are not the constraint"],
       "sources_to_check": ["Intel ISE reference (AMX)", "oneDNN AMX docs"],
+      "segment": "Datacenter",
+      "used_for": ["General-purpose cloud and datacenter servers", "Running mid-size models on the CPU without a GPU, using bf16 and int8 through AMX", "Machine learning that shares a server with other workloads, such as recommendation and databases"],
       "verified": false
     },
     {
@@ -59,6 +63,8 @@
       "programming": ["NEON intrinsics", "Arm Compute Library / XNNPACK", "LLVM AArch64 backend"],
       "gotchas": ["Small caches and a thermally limited clock: sustained speed is below peak", "DRAM bandwidth is shared with every other IP on the SoC"],
       "sources_to_check": ["Arm Cortex-A78 TRM", "Arm Software Optimization Guide"],
+      "segment": "Client and mobile",
+      "used_for": ["Application cores in phones and tablets", "Running the parts of an AI pipeline that do not fit the NPU, plus pre/post-processing", "A common compile target for mobile apps and mobile ML runtimes"],
       "verified": false
     },
     {
@@ -79,6 +85,8 @@
       "programming": ["CUDA C++", "CUTLASS / CuTe", "Triton", "cuBLAS", "PTX"],
       "gotchas": ["Shared-memory bank conflicts: swizzled layouts + ldmatrix", "cp.async multi-stage pipelines hide global-memory latency", "Wave quantization: the tile count versus 108 SMs"],
       "sources_to_check": ["NVIDIA A100 whitepaper", "CUDA C++ Programming Guide (compute capability 8.0)"],
+      "segment": "Datacenter",
+      "used_for": ["Training and serving large neural networks", "High-performance and scientific computing", "The most common cloud GPU for years, so most kernels and papers target it"],
       "verified": false
     },
     {
@@ -99,6 +107,8 @@
       "programming": ["CUDA C++", "CUTLASS 3 / CuTe", "Triton", "cuBLAS", "PTX (wgmma, TMA)"],
       "gotchas": ["TMA copies whole tiles asynchronously from a descriptor: producer/consumer warp specialization becomes part of the kernel", "wgmma reads operands straight from shared memory and needs a swizzled layout", "Thread-block clusters share distributed shared memory"],
       "sources_to_check": ["NVIDIA H100 whitepaper", "PTX ISA (wgmma, cp.async.bulk)"],
+      "segment": "Datacenter",
+      "used_for": ["Training and serving the largest models, including low-precision (FP8) inference", "High-throughput transformer workloads in cloud and on-premise clusters"],
       "verified": false
     },
     {
@@ -119,6 +129,8 @@
       "programming": ["CUDA C++", "TensorRT", "CUTLASS", "Triton"],
       "gotchas": ["Same CUDA programming model as A100 but 16 SMs and ~10x less bandwidth: the same tile is memory-bound here", "CPU and GPU share one DRAM: bandwidth is a system budget", "Power modes change clocks, so peak is not constant"],
       "sources_to_check": ["Jetson AGX Orin data sheet", "CUDA Programming Guide (compute capability 8.7)"],
+      "segment": "Edge and embedded",
+      "used_for": ["Robots, drones and other autonomous machines", "Driver-assistance and in-vehicle computing", "Real-time camera inference on edge boxes, within a power budget"],
       "verified": false
     },
     {
@@ -139,6 +151,8 @@
       "programming": ["HIP", "Composable Kernel / rocWMMA", "Triton (ROCm)", "LLVM AMDGPU backend"],
       "gotchas": ["Wavefront is 64 lanes, not 32", "LDS is 64 KB, much smaller than NVIDIA shared memory, so tiles shrink or stages drop", "Chiplets (8 XCDs): L2 is per-XCD, so workgroup placement changes cache reuse"],
       "sources_to_check": ["AMD CDNA3 ISA guide", "MI300X data sheet"],
+      "segment": "Datacenter",
+      "used_for": ["Training and serving large models, especially memory-hungry ones (192 GB per card)", "A second source of datacenter GPUs in clouds and supercomputers"],
       "verified": false
     },
     {
@@ -159,6 +173,8 @@
       "programming": ["Hexagon SDK (C/C++ HVX intrinsics)", "LLVM Hexagon backend", "QNN"],
       "gotchas": ["HVX wants 128-byte vectors and 128-byte aligned data", "VTCM is software-managed: DMA brings tiles in, nothing is cached for you", "Loads through L2 are coherent, VTCM is not: the choice is per buffer"],
       "sources_to_check": ["Hexagon V68 programmer's reference", "Hexagon SDK docs"],
+      "segment": "Client and mobile",
+      "used_for": ["Camera and image processing, audio and sensor processing on Snapdragon phones", "int8 neural-network inference through the vector unit", "Always-on, low-power background tasks"],
       "verified": false
     },
     {
@@ -179,6 +195,8 @@
       "programming": ["Hexagon SDK (HVX/HMX intrinsics)", "QNN", "LLVM Hexagon backend"],
       "gotchas": ["HMX consumes fixed 2 KB tiles in a special layout: the unit, not the cache, dictates the tile", "Weights and activations both live in VTCM; DMA double-buffers them"],
       "sources_to_check": ["Hexagon V73 programmer's reference", "Hexagon SDK HMX docs"],
+      "segment": "Client and mobile",
+      "used_for": ["On-device AI in phones and laptops: vision, speech and small language models", "Sustained inference at low power, where a GPU would drain the battery"],
       "verified": false
     },
     {
@@ -199,6 +217,8 @@
       "programming": ["Ascend C", "CANN", "TBE / AKG DSLs", "MindSpore"],
       "gotchas": ["Memory hierarchy is explicit at every level: GM -> L1 -> L0A/L0B -> Cube -> L0C -> UB", "Cube wants fractal (16x16 block, NZ) layouts", "Cube and Vector engines are separate and synchronize with explicit flags"],
       "sources_to_check": ["Ascend C programming guide", "CANN documentation"],
+      "segment": "Datacenter",
+      "used_for": ["Training and serving large models inside Huawei's CANN software ecosystem", "An accelerator family with its own compilers and kernel language (Ascend C)"],
       "verified": false
     },
     {
@@ -218,6 +238,8 @@
       "programming": ["AIE kernels (C++ + intrinsics)", "ADF graphs", "MLIR-AIE", "Vitis AI"],
       "gotchas": ["Memory is distributed: each tile owns 64 KB and reaches only neighbors, so placement is a graph-mapping problem", "Compute and data movement are spatial: kernels are placed on tiles and DMA/streams are routed", "The tile shape is set per kernel, but the whole array pipeline decides performance"],
       "sources_to_check": ["AM020 AIE-ML architecture manual", "MLIR-AIE docs"],
+      "segment": "Edge and embedded",
+      "used_for": ["Edge AI and signal processing on adaptive chips: automotive, aerospace, industrial and video", "Fixed-latency streaming pipelines such as radar, wireless and video"],
       "verified": false
     },
     {
@@ -236,6 +258,8 @@
       "programming": ["Vela compiler (offline)", "TensorFlow Lite Micro", "CMSIS-NN"],
       "gotchas": ["The whole network is compiled ahead of time into a command stream: no runtime scheduling", "Weights stay in flash and are DMA'd (compressed) into SRAM", "int8 only; the MAC array shape here is illustrative"],
       "sources_to_check": ["Arm Ethos-U55 TRM", "Vela documentation"],
+      "segment": "Microcontroller",
+      "used_for": ["Always-on machine learning in battery-powered devices: keyword spotting, sensor and anomaly detection, small vision models", "Models compiled ahead of time to run next to a Cortex-M microcontroller"],
       "verified": false
     },
     {
@@ -255,6 +279,8 @@
       "programming": ["XLA", "JAX / Pallas", "StableHLO / MLIR"],
       "gotchas": ["Shapes are padded to (8,128) tiles: odd dimensions waste MXU cycles", "Weight-stationary: the streamed dimension should be >= 128 to amortize weight loads", "XLA decides fusion and layout; you tune with sharding and Pallas BlockSpecs"],
       "sources_to_check": ["Google Cloud TPU v5e docs", "Pallas TPU docs (VMEM size)"],
+      "segment": "Datacenter",
+      "used_for": ["Cost-efficient inference and fine-tuning in Google Cloud", "Models written in JAX or other frameworks that compile through XLA"],
       "verified": false
     },
     {
@@ -273,6 +299,8 @@
       "programming": ["MN1 assembly"],
       "gotchas": ["Defined by docs/manual.md in ../mock-npu-bench; clock of 1 GHz is an assumption of this atlas"],
       "sources_to_check": ["../mock-npu-bench/docs/manual.md"],
+      "segment": "Teaching",
+      "used_for": ["Practice target: learn bring-up, DMA overlap and tiling against a written manual", "Companion to the mock-npu-bench simulator"],
       "verified": true
     }
   ]

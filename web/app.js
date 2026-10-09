@@ -82,7 +82,7 @@ function kids(node) {
   for (const d of node.devices) out.push({ type: "device", dev: d });
   return out;
 }
-const matches = (d, q) => !q || [d.name, d.id, d.vendor, ...d.path, ...(d.programming || [])].join(" ").toLowerCase().includes(q);
+const matches = (d, q) => !q || [d.name, d.id, d.vendor, d.segment, ...d.path, ...(d.programming || []), ...(d.used_for || [])].join(" ").toLowerCase().includes(q);
 function preferredDtype(dev) {
   const withPeak = DTYPE_ORDER.find((t) => dev.dtypes.includes(t) && dev.peak_gflops[t]);
   return withPeak || dev.dtypes[0];
@@ -237,7 +237,7 @@ function compareView() {
     rows.push({ d, p, waste: 100 * (1 - p.flops / p.flops_padded), pct: p.pct_peak });
   }
   const cols = [
-    ["dev", "Device", (r) => r.d.name, false], ["outer", "Outer tile", (r) => r.p.outer, false], ["inner", "Inner unit", (r) => r.p.inner, false],
+    ["dev", "Device", (r) => r.d.name, false], ["seg", "Used in", (r) => r.d.segment, false], ["outer", "Outer tile", (r) => r.p.outer, false], ["inner", "Inner unit", (r) => r.p.inner, false],
     ["res", "Tile lives in", (r) => r.p.resident, false], ["waste", "Padding", (r) => r.waste, true], ["ai", "FLOP per byte", (r) => r.p.ai, true],
     ["bound", "Bound by", (r) => r.p.bound, false], ["pct", "Share of peak", (r) => r.pct ?? -1, true],
   ];
@@ -249,7 +249,7 @@ function compareView() {
   const body = rows.map(({ d, p, waste, pct }) =>
     h("tr", {},
       h("td", {}, h("span", { class: "devcell" }, glyph(d.archetype, d.verified), h("a", { href: hashFor({ view: "device", id: d.id }, new URLSearchParams({ p: preset.id, t: dt })), text: d.name }))),
-      h("td", {}, h("span", { class: "mono", text: p.outer })), h("td", { text: p.inner }), h("td", { text: shortRes(p.resident) }),
+      h("td", { text: d.segment }), h("td", {}, h("span", { class: "mono", text: p.outer })), h("td", { text: p.inner }), h("td", { text: shortRes(p.resident) }),
       h("td", { class: "num", text: waste < 0.5 ? "none" : Math.round(waste) + "%" }),
       h("td", { class: "num", text: fmtNum(p.ai) + (p.balance ? " vs " + fmtNum(p.balance) : "") }),
       h("td", { text: p.bound === "n/a" ? "unknown" : p.bound }),
@@ -293,7 +293,7 @@ function groupView(node) {
     h("div", { style: "height:10px" }), sections);
 }
 function deviceRow(d) {
-  const bits = [`${d.units.count} ${d.units.name}${d.units.count > 1 ? "s" : ""}`];
+  const bits = [d.segment, `${d.units.count} ${d.units.name}${d.units.count > 1 ? "s" : ""}`];
   if (d.matrix_unit) bits.push(`${d.matrix_unit.m}x${d.matrix_unit.n}x${d.matrix_unit.k} matrix unit`);
   else if (d.vector) bits.push(`${d.vector.bits}-bit vectors`);
   const fast = d.memory.find((m) => ["spm", "smem", "l1"].includes(m.role));
@@ -345,7 +345,7 @@ function deviceView(dev) {
   if (dev.matrix_unit) row("Matrix unit", [`${dev.matrix_unit.name}: `, h("span", { class: "mono", text: `${dev.matrix_unit.m}x${dev.matrix_unit.n}x${dev.matrix_unit.k}` }), ` (${dev.matrix_unit.dtype.join(", ")})`]);
   row("Data types", dev.dtypes.join(", "));
   const peaks = Object.entries(dev.peak_gflops);
-  row("Peak throughput", peaks.length ? peaks.map(([t, g]) => `${fmtNum(g / 1000)} ${unitOf(t)} ${t}`).join(", ") : "not recorded");
+  row("Peak throughput", peaks.length ? peaks.map(([t, g]) => (g < 1000 ? `${g} ${unitOf(t).replace("T", "G")} ${t}` : `${fmtNum(g / 1000)} ${unitOf(t)} ${t}`)).join(", ") : "not recorded");
   row("DRAM", `${dev.dram.name}${dev.dram.gb ? ", " + dev.dram.gb + " GB" : ""}${dev.dram.gbps ? ", " + dev.dram.gbps + " GB/s" : ""}`);
 
   let tiling;
@@ -390,9 +390,10 @@ function deviceView(dev) {
   return h("div", {},
     crumbs(dev),
     h("h1", { class: "title", text: dev.name }),
-    h("p", { class: "meta" }, h("span", { text: dev.vendor }), h("span", { class: "mono", text: dev.id })),
+    h("p", { class: "meta" }, h("span", { text: dev.vendor }), h("span", { text: dev.segment }), h("span", { class: "mono", text: dev.id })),
     h("div", { class: "arch" }, glyph(dev.archetype, dev.verified, 16), h("p", {}, h("strong", { text: a.short + ". " }), `Here, a tile is ${a.tile}.`)),
     dev.verified ? null : h("p", { class: "note" }, glyph(dev.archetype, false), h("span", {}, "These numbers have not been checked against vendor documents yet. Check: ", dev.sources_to_check.join("; "), ".")),
+    sec("Used for", h("ul", { class: "plain" }, dev.used_for.map((u) => h("li", { text: u })))),
     sec("Compute", h("dl", { class: "spec" }, spec)),
     sec("Memory and tiling", controls, tiling),
     sec("Software", h("ul", { class: "tags" }, dev.programming.map((p) => h("li", { text: p })))),

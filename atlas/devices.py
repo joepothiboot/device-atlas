@@ -11,6 +11,7 @@ ARCHETYPES = {
     "scratchpad_dma": "software owns all on-chip memory and the DMA that fills it",
 }
 DTYPES = {"f32", "f16", "bf16", "i8"}
+SEGMENTS = ["Datacenter", "Client and mobile", "Edge and embedded", "Microcontroller", "Teaching"]
 REQUIRED = ["id", "name", "path", "archetype", "units", "dtypes", "peak_gflops", "dram", "memory", "verified"]
 ROLES_NEEDED = {"cache_cpu": ["l1", "l2"], "simt_gpu": ["smem"], "scratchpad_dma": ["spm"]}
 
@@ -35,6 +36,10 @@ def validate(dev):
             errs.append(f"missing '{k}'")
     if errs:
         return errs
+    if dev.get("segment") not in SEGMENTS:
+        errs.append(f"segment must be one of {SEGMENTS}")
+    if not dev.get("used_for"):
+        errs.append("used_for must list at least one purpose")
     if len(dev["path"]) != 3:
         errs.append("path must have 3 levels (class, subclass, family)")
     if dev["archetype"] not in ARCHETYPES:

@@ -18,6 +18,13 @@ class Database(unittest.TestCase):
         for d in DEVS:
             self.assertEqual(D.validate(d), [], d["id"])
 
+    def test_every_device_says_what_it_is_used_for(self):
+        for d in DEVS:
+            self.assertIn(d["segment"], D.SEGMENTS, d["id"])
+            self.assertGreaterEqual(len(d["used_for"]), 1, d["id"])
+            for u in d["used_for"]:
+                self.assertGreater(len(u), 20, f"{d['id']}: purpose too terse: {u!r}")
+
     def test_unique_ids(self):
         ids = [d["id"] for d in DEVS]
         self.assertEqual(len(ids), len(set(ids)))
@@ -38,6 +45,10 @@ class Database(unittest.TestCase):
         bad = dict(DEVS[0]); bad["archetype"] = "magic"
         self.assertTrue(D.validate(bad))
         bad = dict(DEVS[0]); del bad["memory"]
+        self.assertTrue(D.validate(bad))
+        bad = dict(DEVS[0]); bad["used_for"] = []
+        self.assertTrue(D.validate(bad))
+        bad = dict(DEVS[0]); bad["segment"] = "Moon"
         self.assertTrue(D.validate(bad))
 
 
