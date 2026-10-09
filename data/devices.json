@@ -11,6 +11,7 @@
       "dtypes": ["f32"], "peak_gflops": {"f32": 896},
       "dram": {"name": "DDR4-3200 dual channel", "gb": null, "gbps": 51.2},
       "memory": [
+        {"name": "Vector registers (16 x 32 B)", "role": "regs", "kb": 0.5, "scope": "per_unit"},
         {"name": "L1d", "role": "l1", "kb": 32, "scope": "per_unit"},
         {"name": "L2", "role": "l2", "kb": 512, "scope": "per_unit"},
         {"name": "L3", "role": "l3", "kb": 16384, "scope": "shared"}
@@ -30,6 +31,7 @@
       "dtypes": ["f32", "bf16"], "peak_gflops": {"f32": 7168, "bf16": 229000},
       "dram": {"name": "DDR5-4800 x8 channels", "gb": null, "gbps": 307.2},
       "memory": [
+        {"name": "Vector registers (32 x 64 B) + AMX tiles (8 x 1 KB)", "role": "regs", "kb": 10, "scope": "per_unit"},
         {"name": "L1d", "role": "l1", "kb": 48, "scope": "per_unit"},
         {"name": "L2", "role": "l2", "kb": 2048, "scope": "per_unit"},
         {"name": "L3", "role": "l3", "kb": 107520, "scope": "shared"}
@@ -49,6 +51,7 @@
       "dtypes": ["f32"], "peak_gflops": {"f32": 192},
       "dram": {"name": "LPDDR5 (shared with GPU/NPU)", "gb": null, "gbps": 51.2},
       "memory": [
+        {"name": "Vector registers (32 x 16 B)", "role": "regs", "kb": 0.5, "scope": "per_unit"},
         {"name": "L1d", "role": "l1", "kb": 64, "scope": "per_unit"},
         {"name": "L2", "role": "l2", "kb": 512, "scope": "per_unit"},
         {"name": "L3 (DSU)", "role": "l3", "kb": 4096, "scope": "shared"}

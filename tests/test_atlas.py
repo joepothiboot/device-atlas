@@ -111,6 +111,78 @@ class Planners(unittest.TestCase):
         self.assertEqual(P.plan(d, "f16", 2048, 2048, 2048)["outer"], P.plan(d, "f16", 2048, 2048, 2048)["outer"])
 
 
+class Site(unittest.TestCase):
+    def test_data_covers_every_device_and_preset(self):
+        from atlas import site
+        data = site.build_data()
+        self.assertEqual([d["id"] for d in data["devices"]], [d["id"] for d in DEVS])
+        for d in DEVS:
+            self.assertIn(d["id"], data["plans"], d["id"])
+            for pr in data["presets"]:
+                self.assertIn(pr["id"], data["plans"][d["id"]])
+                self.assertEqual(set(data["plans"][d["id"]][pr["id"]]), set(d["dtypes"]))
+        for d in DEVS:
+            for node in d["path"][:2]:  # class and subclass carry a note; families do not
+                self.assertIn(node, data["group_notes"], f"no group note for '{node}'")
+
+    def test_data_is_plain_json(self):
+        import json
+        from atlas import site
+        json.dumps(site.build_data(), allow_nan=False)  # no NaN/inf leaking into the page
+
+    def test_tile_roles_name_real_memory_levels(self):
+        from atlas import site
+        data = site.build_data()
+        roles = {d["id"]: {m["role"] for m in d["memory"]} for d in DEVS}
+        for did, presets in data["plans"].items():
+            for by_dt in presets.values():
+                for plan in by_dt.values():
+                    for t in plan["tiles_list"]:
+                        if t.get("role"):
+                            self.assertIn(t["role"], roles[did], f"{did}: {t['level']}")
+
+    def test_build_writes_assets(self):
+        import tempfile
+        from atlas import site
+        with tempfile.TemporaryDirectory() as tmp:
+            site.build(tmp)
+            self.assertTrue(os.path.exists(os.path.join(tmp, "data.json")))
+            self.assertTrue(os.path.exists(os.path.join(tmp, ".nojekyll")))
+
+
+class Web(unittest.TestCase):
+    """Pages serves the site under /device-atlas/, so every asset path must be relative."""
+    WEB = os.path.join(os.path.dirname(__file__), "..", "web")
+
+    def read(self, name):
+        with open(os.path.join(self.WEB, name)) as f:
+            return f.read()
+
+    def test_index_links_to_existing_local_files(self):
+        html = self.read("index.html")
+        for ref in ("style.css", "app.js"):
+            self.assertIn(ref, html)
+            self.assertTrue(os.path.exists(os.path.join(self.WEB, ref)), ref)
+
+    def test_no_root_absolute_paths(self):
+        html, js = self.read("index.html"), self.read("app.js")
+        for needle in ('href="/', 'src="/', "fetch(\"/"):
+            self.assertNotIn(needle, html + js)
+
+    def test_ui_only_reads_fields_the_data_provides(self):
+        # app.js reads these plan keys; they must exist in every generated plan
+        from atlas import site
+        data = site.build_data()
+        needed = {"outer", "inner", "resident", "tiles_list", "notes", "flops", "flops_padded", "ai", "balance",
+                  "traffic", "t", "t_comp", "t_dma", "bound", "pct_peak"}
+        for presets in data["plans"].values():
+            for by_dt in presets.values():
+                for plan in by_dt.values():
+                    self.assertTrue(needed <= set(plan), needed - set(plan))
+        for k in ("devices", "plans", "presets", "group_notes", "archetypes"):
+            self.assertIn(k, data)
+
+
 class Cli(unittest.TestCase):
     def test_commands_run(self):
         for argv in (["tree"], ["show", "nvidia-a100"], ["tile", "nvidia-a100"], ["compare"], ["audit"]):

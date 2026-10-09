@@ -1,0 +1,68 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests
+      - name: Check the UI script parses
+        run: node --check web/app.js
+      - name: Build site
+        run: python3 -m atlas site --out dist
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Check the live site serves the build
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          for attempt in $(seq 1 12); do
+            if curl -fsSL "${PAGE_URL}data.json?check=$GITHUB_SHA" | grep -q '"devices"' \
+               && curl -fsSL "${PAGE_URL}?check=$GITHUB_SHA" | grep -q 'Device atlas'; then
+              echo "Live site serves the build."
+              exit 0
+            fi
+            echo "Attempt $attempt: not live yet, waiting."
+            sleep 10
+          done
+          echo "Live site did not serve the build." >&2
+          exit 1

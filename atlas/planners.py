@@ -32,6 +32,14 @@ def role_bytes(dev, r):
     return m["kb"] * 1024 if m else 0
 
 
+def llc_role(dev):
+    best, role_name = 0, None
+    for m in dev["memory"]:
+        if m["role"] in ("l2", "l3") and m["scope"] == "shared" and m["kb"] * 1024 > best:
+            best, role_name = m["kb"] * 1024, m["role"]
+    return role_name
+
+
 def llc_bytes(dev):
     """Largest shared cache (last-level) used for tile-group reuse on GPUs."""
     best = 0
@@ -162,10 +170,10 @@ def plan_cpu(dev, dt, M, N, K):
     t = max(t_comp, t_dma) if (t_comp and t_dma) else None
     c = dict(traffic=traffic, t_comp=t_comp, t_dma=t_dma, t=t, tiles=cdiv(M, mc) * cdiv(N, nc))
     tiles = [
-        dict(level="registers", shape=f"{mr} x {nr}", use=reg_use, cap=reg_cap, unit="regs"),
-        dict(level="L1 (micro-panels)", shape=f"({mr}+{nr}) x kc={kc}", use=(mr + nr) * kc * in_b, cap=l1),
-        dict(level="L2 (A block)", shape=f"mc={mc} x kc={kc}", use=mc * kc * in_b, cap=l2),
-        dict(level="L3 (B panel)", shape=f"kc={kc} x nc={nc}", use=kc * nc * in_b, cap=l3),
+        dict(level="registers", role="regs", shape=f"{mr} x {nr}", use=reg_use, cap=reg_cap, unit="regs"),
+        dict(level="L1 (micro-panels)", role="l1", shape=f"({mr}+{nr}) x kc={kc}", use=(mr + nr) * kc * in_b, cap=l1),
+        dict(level="L2 (A block)", role="l2", shape=f"mc={mc} x kc={kc}", use=mc * kc * in_b, cap=l2),
+        dict(level="L3 (B panel)", role="l3", shape=f"kc={kc} x nc={nc}", use=kc * nc * in_b, cap=l3),
     ]
     notes += [
         "Nothing is explicitly moved: the loop order (BLIS: jc, pc, ic, jr, ir) is arranged so each panel is reused "
@@ -208,20 +216,20 @@ def plan_gpu(dev, dt, M, N, K):
     _, tm, tn, tk, threads, acc, smem_blk, bps, Mp, Np, Kp, c = best
     llc = llc_bytes(dev)
     tiles = [
-        dict(level="shared cache group", shape=f"{c['gm']}x{c['gn']} tiles = {c['gm'] * tm}x{c['gn'] * tn}",
+        dict(level="shared cache group", role=llc_role(dev), shape=f"{c['gm']}x{c['gn']} tiles = {c['gm'] * tm}x{c['gn'] * tn}",
              use=c["gm"] * tm * Kp * in_b + c["gn"] * tn * Kp * in_b, cap=llc),
-        dict(level="shared memory (block tile)", shape=f"{tm} x {tn} x {tk}, {stages} stages", use=smem_blk, cap=smem_cap),
-        dict(level="registers (accumulators)", shape=f"{acc} fp32/thread x {threads} threads", use=acc + 48,
+        dict(level="shared memory (block tile)", role="smem", shape=f"{tm} x {tn} x {tk}, {stages} stages", use=smem_blk, cap=smem_cap),
+        dict(level="registers (accumulators)", role="regs", shape=f"{acc} fp32/thread x {threads} threads", use=acc + 48,
              cap=g["max_regs_thread"], unit="regs/thread"),
-        dict(level="matrix instruction", shape=f"{mu['m']}x{mu['n']}x{mu['k']} ({mu['name']})", use=None, cap=None),
+        dict(level="matrix instruction", role=None, shape=f"{mu['m']}x{mu['n']}x{mu['k']} ({mu['name']})", use=None, cap=None),
     ]
     notes = [
         f"The block tile lives in shared memory ({stages} pipeline stages of A+B tiles): {smem_blk // 1024} KB of "
         f"{smem_cap // 1024} KB. Tile sides must be multiples of the matrix instruction ({mu['m']}x{mu['n']}x{mu['k']}).",
-        f"{tm * tn} accumulators are spread over {threads} threads = {acc} registers each; {bps} block(s) fit per "
-        f"{dev['units']['name']} (limited by shared memory and registers).",
+        f"{tm * tn} accumulators are spread over {threads} threads = {acc} registers each; each "
+        f"{dev['units']['name']} holds {bps} block{'' if bps == 1 else 's'} at a time (limited by shared memory and registers).",
         f"Hardware schedules blocks: {c['tiles']} blocks over {dev['units']['count']} {dev['units']['name']}s = "
-        f"{c['rounds']} wave(s), utilization {100 * c['tiles'] / (c['rounds'] * dev['units']['count']):.0f}% "
+        f"{c['rounds']} wave{'' if c['rounds'] == 1 else 's'}, utilization {100 * c['tiles'] / (c['rounds'] * dev['units']['count']):.0f}% "
         f"(wave quantization).",
         f"Grouping {c['gm']}x{c['gn']} neighboring blocks keeps their A/B panels in the shared cache (rasterization/"
         f"swizzle), which is what lets the tile be small without every block re-reading DRAM.",
@@ -267,10 +275,10 @@ def plan_scratchpad(dev, dt, M, N, K):
     _, tm, tn, tk, foot, c = best
     unit = (f"{mu['name']}: {mu['m']}x{mu['n']}x{mu['k']}" if mu else f"{lanes}-lane vector ({vec['bits']}-bit)")
     tiles = [
-        dict(level="scratchpad (all buffers)", shape=f"tile {tm} x {tn} x {tk}", use=foot, cap=role_bytes(dev, "spm")),
-        dict(level=" A,B double buffers", shape=f"2 x ({tm}x{tk} + {tk}x{tn})", use=2 * (tm * tk + tk * tn) * in_b, cap=None),
-        dict(level=" C accumulator tile", shape=f"{tm} x {tn} x {out_b}B", use=tm * tn * out_b, cap=None),
-        dict(level="compute unit", shape=unit, use=None, cap=None),
+        dict(level="scratchpad (all buffers)", role="spm", shape=f"tile {tm} x {tn} x {tk}", use=foot, cap=role_bytes(dev, "spm")),
+        dict(level=" A,B double buffers", role=None, shape=f"2 x ({tm}x{tk} + {tk}x{tn})", use=2 * (tm * tk + tk * tn) * in_b, cap=None),
+        dict(level=" C accumulator tile", role=None, shape=f"{tm} x {tn} x {out_b}B", use=tm * tn * out_b, cap=None),
+        dict(level="compute unit", role=None, shape=unit, use=None, cap=None),
     ]
     notes = [
         f"No cache: the tile and its double buffers must fit the scratchpad exactly "

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Device atlas</title>
+<meta name="description" content="A classified catalog of CPUs, GPUs, DSPs and NPUs, with the same matrix multiply tiled for each so you can see why the answers differ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+  try { var t = localStorage.getItem("atlas.theme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to details</a>
+<div class="app">
+  <aside id="side" class="side" aria-label="Device hierarchy">
+    <div class="side-head">
+      <a class="brand" href="#/">Device atlas</a>
+      <p class="tagline">How one matrix multiply gets tiled on different chips</p>
+      <input id="q" class="search" type="search" placeholder="Filter devices" aria-label="Filter devices" autocomplete="off">
+      <div class="tools">
+        <button type="button" id="expand">Expand all</button>
+        <button type="button" id="collapse">Collapse all</button>
+      </div>
+    </div>
+    <a id="compare-link" class="pinned" href="#/compare">Compare all devices</a>
+    <nav class="tree-wrap" aria-label="Devices by class">
+      <ul id="tree" role="tree" aria-label="Devices"></ul>
+    </nav>
+    <div class="legend" aria-label="Legend">
+      <span><svg class="glyph a-cache" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><circle class="g-solid" cx="7" cy="7" r="5.2"/></svg>Hardware caches</span>
+      <span><svg class="glyph a-gpu" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><polygon class="g-solid" points="7,1.5 13,12 1,12"/></svg>GPU shared memory</span>
+      <span><svg class="glyph a-spm" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><rect class="g-solid" x="1.8" y="1.8" width="10.4" height="10.4" rx="1.5"/></svg>Scratchpad + DMA</span>
+      <span><svg class="glyph a-none" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><circle class="g-hollow" cx="7" cy="7" r="5.2"/></svg>Hollow: not yet verified</span>
+      <a class="repo" href="https://github.com/joepothiboot/device-atlas">Source on GitHub</a>
+    </div>
+  </aside>
+  <div id="scrim" class="scrim" hidden></div>
+  <main id="main" class="main" tabindex="-1">
+    <div class="topbar">
+      <button type="button" id="menu" class="icon-btn menu-btn" aria-controls="side" aria-expanded="false">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 5.5h14M3 10h14M3 14.5h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>
+        <span>Devices</span>
+      </button>
+      <button type="button" id="theme" class="icon-btn" aria-label="Switch color theme">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M10 2.5v15a7.5 7.5 0 0 1 0-15z" fill="currentColor"/><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+      </button>
+    </div>
+    <div id="view" class="view"></div>
+  </main>
+</div>
+<div id="live" class="sr" aria-live="polite"></div>
+<noscript><p style="padding:2rem">This page needs JavaScript to browse the device catalog.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>

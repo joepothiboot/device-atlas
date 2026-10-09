@@ -31,7 +31,7 @@ def show(dev):
         out.append(f"  matrix unit: {mu['name']}  {mu['m']}x{mu['n']}x{mu['k']}  ({', '.join(mu['dtype'])})")
     out.append("  memory:")
     for m in dev["memory"]:
-        out.append(f"    {m['name']:<44} {fmt_bytes(m['kb'] * 1024):>8}  {m['scope']}")
+        out.append(f"    {m['name']:<44} {fmt_bytes(int(m['kb'] * 1024)):>8}  {m['scope']}")
     d = dev["dram"]
     out.append(f"    {d['name']:<44} {str(d['gb']) + ' GB' if d['gb'] else '?':>8}  {d['gbps'] or '?'} GB/s")
     if dev["peak_gflops"]:
@@ -132,6 +132,7 @@ def main(argv=None):
         s.add_argument("--m", type=int, default=1024); s.add_argument("--n", type=int, default=1024)
         s.add_argument("--k", type=int, default=1024); s.add_argument("--dtype", default="f16", choices=sorted(P.DT))
     sub.add_parser("audit", help="list data-quality gaps")
+    s = sub.add_parser("site", help="build the static web UI into --out"); s.add_argument("--out", default="dist")
     s = sub.add_parser("docs", help="regenerate docs/comparison.md"); s.add_argument("--out", default=os.path.join(D.HERE, "..", "docs"))
     a = ap.parse_args(argv)
 
@@ -158,6 +159,9 @@ def main(argv=None):
                 for m in missing:
                     print(f"note  {i}: {m}")
             return 1 if bad else 0
+        elif a.cmd == "site":
+            from . import site
+            print("built", site.build(a.out))
         elif a.cmd == "docs":
             print("wrote", gen_docs(devs, a.out))
     except (KeyError, P.NoFit) as e:

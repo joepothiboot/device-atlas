@@ -40,6 +40,22 @@ python3 -m unittest discover -s tests
 
 Python 3, standard library only.
 
+## Web UI
+
+A static site: a collapsible device tree on the left, and on the right a device page (specs, memory
+ladder with the tile's footprint, tile table, reasons, estimate), a group page, or the all-device
+comparison. Presets are precomputed by the Python planner, so the browser never re-implements it.
+
+```bash
+python3 -m atlas site --out dist          # build web/ + data.json into dist/
+python3 -m http.server -d dist 8000       # then open http://localhost:8000
+```
+
+It deploys to GitHub Pages from `.github/workflows/pages.yml` on every push to `main`
+(tests, build, deploy, then a check that the live site serves the build). One-time setup:
+repo Settings, Pages, Source: **GitHub Actions**. Expected address:
+https://joepothiboot.github.io/device-atlas/
+
 ## What to read
 
 - [docs/axes.md](docs/axes.md): seven questions to ask about any new device, and what each one does to tiling.
