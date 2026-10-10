@@ -18,6 +18,14 @@ class Database(unittest.TestCase):
         for d in DEVS:
             self.assertEqual(D.validate(d), [], d["id"])
 
+    def test_every_device_has_a_toolchain(self):
+        for d in DEVS:
+            tc = d["toolchain"]
+            self.assertIn(tc["who_tiles"], ("you", "compiler", "library"), d["id"])
+            self.assertGreaterEqual(len(tc["write_in"]), 1, d["id"])
+            self.assertGreaterEqual(len(tc["lowering"]), 2, d["id"])
+            self.assertTrue(tc["start_here"] and tc["skill"], d["id"])
+
     def test_every_device_says_what_it_is_used_for(self):
         for d in DEVS:
             self.assertIn(d["segment"], D.SEGMENTS, d["id"])

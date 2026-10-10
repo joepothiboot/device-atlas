@@ -2,306 +2,1321 @@
   "_note": "Teaching data entered from public knowledge, NOT verified against vendor documents. Every entry has verified=false until someone checks it against the sources named in sources_to_check. Peak numbers are dense (no sparsity), whole device, in GFLOP/s (GOP/s for int8).",
   "devices": [
     {
-      "id": "x86-avx2", "name": "x86-64 core with AVX2 (Skylake/Zen2 class)", "vendor": "Intel/AMD",
-      "path": ["General-purpose processors", "CPU with SIMD", "x86 AVX2"],
+      "id": "x86-avx2",
+      "name": "x86-64 core with AVX2 (Skylake/Zen2 class)",
+      "vendor": "Intel/AMD",
+      "path": [
+        "General-purpose processors",
+        "CPU with SIMD",
+        "x86 AVX2"
+      ],
       "archetype": "cache_cpu",
-      "units": {"count": 8, "name": "core"},
-      "vector": {"bits": 256, "regs": 16},
+      "units": {
+        "count": 8,
+        "name": "core"
+      },
+      "vector": {
+        "bits": 256,
+        "regs": 16
+      },
       "matrix_unit": null,
-      "dtypes": ["f32"], "peak_gflops": {"f32": 896},
-      "dram": {"name": "DDR4-3200 dual channel", "gb": null, "gbps": 51.2},
-      "memory": [
-        {"name": "Vector registers (16 x 32 B)", "role": "regs", "kb": 0.5, "scope": "per_unit"},
-        {"name": "L1d", "role": "l1", "kb": 32, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 512, "scope": "per_unit"},
-        {"name": "L3", "role": "l3", "kb": 16384, "scope": "shared"}
+      "dtypes": [
+        "f32"
       ],
-      "programming": ["C++ intrinsics", "BLIS / oneDNN / MKL", "LLVM auto-vectorizer", "MLIR vector dialect"],
-      "gotchas": ["Only 16 vector registers: the micro-kernel is a register-allocation problem", "Edge tiles need separate small kernels (AVX2 masking is awkward)", "Power-of-two strides hit cache associativity conflicts"],
-      "sources_to_check": ["Intel optimization manual", "Agner Fog microarchitecture tables", "BLIS kernel configs"],
+      "peak_gflops": {
+        "f32": 896
+      },
+      "dram": {
+        "name": "DDR4-3200 dual channel",
+        "gb": null,
+        "gbps": 51.2
+      },
+      "memory": [
+        {
+          "name": "Vector registers (16 x 32 B)",
+          "role": "regs",
+          "kb": 0.5,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L1d",
+          "role": "l1",
+          "kb": 32,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 512,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L3",
+          "role": "l3",
+          "kb": 16384,
+          "scope": "shared"
+        }
+      ],
+      "programming": [
+        "C++ intrinsics",
+        "BLIS / oneDNN / MKL",
+        "LLVM auto-vectorizer",
+        "MLIR vector dialect"
+      ],
+      "gotchas": [
+        "Only 16 vector registers: the micro-kernel is a register-allocation problem",
+        "Edge tiles need separate small kernels (AVX2 masking is awkward)",
+        "Power-of-two strides hit cache associativity conflicts"
+      ],
+      "sources_to_check": [
+        "Intel optimization manual",
+        "Agner Fog microarchitecture tables",
+        "BLIS kernel configs"
+      ],
       "segment": "Client and mobile",
-      "used_for": ["Everyday computing on desktops, laptops and many servers", "Running smaller models on the CPU, and pre/post-processing around accelerators", "The baseline most compilers and math libraries (BLAS, oneDNN) are written and tested against"],
-      "verified": false
-    },
-    {
-      "id": "x86-sapphire-rapids-amx", "name": "Intel Xeon Sapphire Rapids (AVX-512 + AMX)", "vendor": "Intel",
-      "path": ["General-purpose processors", "CPU with matrix extension", "x86 AMX"],
-      "archetype": "cache_cpu",
-      "units": {"count": 56, "name": "core"},
-      "vector": {"bits": 512, "regs": 32},
-      "matrix_unit": {"name": "AMX TMUL (8 tile registers of 16 rows x 64 B)", "m": 16, "n": 16, "k": 32, "dtype": ["bf16"]},
-      "dtypes": ["f32", "bf16"], "peak_gflops": {"f32": 7168, "bf16": 229000},
-      "dram": {"name": "DDR5-4800 x8 channels", "gb": null, "gbps": 307.2},
-      "memory": [
-        {"name": "Vector registers (32 x 64 B) + AMX tiles (8 x 1 KB)", "role": "regs", "kb": 10, "scope": "per_unit"},
-        {"name": "L1d", "role": "l1", "kb": 48, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 2048, "scope": "per_unit"},
-        {"name": "L3", "role": "l3", "kb": 107520, "scope": "shared"}
+      "used_for": [
+        "Everyday computing on desktops, laptops and many servers",
+        "Running smaller models on the CPU, and pre/post-processing around accelerators",
+        "The baseline most compilers and math libraries (BLAS, oneDNN) are written and tested against"
       ],
-      "programming": ["C++ intrinsics (_tile_*)", "oneDNN", "LLVM x86 AMX backend", "MLIR amx dialect"],
-      "gotchas": ["Tile palette must be configured (ldtilecfg) and the OS must grant AMX state", "bf16 B operand wants a VNNI layout (k pairs interleaved): a data-layout transform, not just a tile size", "AMX tile shape (16 x 64 B) fixes the micro-kernel; registers are not the constraint"],
-      "sources_to_check": ["Intel ISE reference (AMX)", "oneDNN AMX docs"],
-      "segment": "Datacenter",
-      "used_for": ["General-purpose cloud and datacenter servers", "Running mid-size models on the CPU without a GPU, using bf16 and int8 through AMX", "Machine learning that shares a server with other workloads, such as recommendation and databases"],
-      "verified": false
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "C++ with AVX2 intrinsics",
+          "Plain C++ the compiler vectorizes",
+          "BLIS or oneDNN for production"
+        ],
+        "lowering": [
+          "Clang",
+          "LLVM IR",
+          "loop and SLP vectorizer",
+          "x86 backend"
+        ],
+        "who_tiles": "you",
+        "start_here": "Write a 6x16 register micro-kernel with intrinsics, then add L1/L2 blocking and packing around it.",
+        "skill": "Cache blocking, register tiling, vector shuffles"
+      }
     },
     {
-      "id": "arm-cortex-a78", "name": "Arm Cortex-A78 cluster (NEON)", "vendor": "Arm",
-      "path": ["General-purpose processors", "CPU with SIMD", "Arm NEON (mobile)"],
+      "id": "x86-sapphire-rapids-amx",
+      "name": "Intel Xeon Sapphire Rapids (AVX-512 + AMX)",
+      "vendor": "Intel",
+      "path": [
+        "General-purpose processors",
+        "CPU with matrix extension",
+        "x86 AMX"
+      ],
       "archetype": "cache_cpu",
-      "units": {"count": 4, "name": "core"},
-      "vector": {"bits": 128, "regs": 32},
+      "units": {
+        "count": 56,
+        "name": "core"
+      },
+      "vector": {
+        "bits": 512,
+        "regs": 32
+      },
+      "matrix_unit": {
+        "name": "AMX TMUL (8 tile registers of 16 rows x 64 B)",
+        "m": 16,
+        "n": 16,
+        "k": 32,
+        "dtype": [
+          "bf16"
+        ]
+      },
+      "dtypes": [
+        "f32",
+        "bf16"
+      ],
+      "peak_gflops": {
+        "f32": 7168,
+        "bf16": 229000
+      },
+      "dram": {
+        "name": "DDR5-4800 x8 channels",
+        "gb": null,
+        "gbps": 307.2
+      },
+      "memory": [
+        {
+          "name": "Vector registers (32 x 64 B) + AMX tiles (8 x 1 KB)",
+          "role": "regs",
+          "kb": 10,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L1d",
+          "role": "l1",
+          "kb": 48,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 2048,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L3",
+          "role": "l3",
+          "kb": 107520,
+          "scope": "shared"
+        }
+      ],
+      "programming": [
+        "C++ intrinsics (_tile_*)",
+        "oneDNN",
+        "LLVM x86 AMX backend",
+        "MLIR amx dialect"
+      ],
+      "gotchas": [
+        "Tile palette must be configured (ldtilecfg) and the OS must grant AMX state",
+        "bf16 B operand wants a VNNI layout (k pairs interleaved): a data-layout transform, not just a tile size",
+        "AMX tile shape (16 x 64 B) fixes the micro-kernel; registers are not the constraint"
+      ],
+      "sources_to_check": [
+        "Intel ISE reference (AMX)",
+        "oneDNN AMX docs"
+      ],
+      "segment": "Datacenter",
+      "used_for": [
+        "General-purpose cloud and datacenter servers",
+        "Running mid-size models on the CPU without a GPU, using bf16 and int8 through AMX",
+        "Machine learning that shares a server with other workloads, such as recommendation and databases"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "C++ with _tile_* intrinsics",
+          "oneDNN"
+        ],
+        "lowering": [
+          "Clang",
+          "LLVM IR",
+          "x86 AMX backend",
+          "tile config + tile loads"
+        ],
+        "who_tiles": "you",
+        "start_here": "Use oneDNN first. Then write one 16x16 tile-register kernel by hand to see palette and tile-config setup.",
+        "skill": "Tile registers, VNNI data layout, AMX state setup"
+      }
+    },
+    {
+      "id": "arm-cortex-a78",
+      "name": "Arm Cortex-A78 cluster (NEON)",
+      "vendor": "Arm",
+      "path": [
+        "General-purpose processors",
+        "CPU with SIMD",
+        "Arm NEON (mobile)"
+      ],
+      "archetype": "cache_cpu",
+      "units": {
+        "count": 4,
+        "name": "core"
+      },
+      "vector": {
+        "bits": 128,
+        "regs": 32
+      },
       "matrix_unit": null,
-      "dtypes": ["f32"], "peak_gflops": {"f32": 192},
-      "dram": {"name": "LPDDR5 (shared with GPU/NPU)", "gb": null, "gbps": 51.2},
-      "memory": [
-        {"name": "Vector registers (32 x 16 B)", "role": "regs", "kb": 0.5, "scope": "per_unit"},
-        {"name": "L1d", "role": "l1", "kb": 64, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 512, "scope": "per_unit"},
-        {"name": "L3 (DSU)", "role": "l3", "kb": 4096, "scope": "shared"}
+      "dtypes": [
+        "f32"
       ],
-      "programming": ["NEON intrinsics", "Arm Compute Library / XNNPACK", "LLVM AArch64 backend"],
-      "gotchas": ["Small caches and a thermally limited clock: sustained speed is below peak", "DRAM bandwidth is shared with every other IP on the SoC"],
-      "sources_to_check": ["Arm Cortex-A78 TRM", "Arm Software Optimization Guide"],
+      "peak_gflops": {
+        "f32": 192
+      },
+      "dram": {
+        "name": "LPDDR5 (shared with GPU/NPU)",
+        "gb": null,
+        "gbps": 51.2
+      },
+      "memory": [
+        {
+          "name": "Vector registers (32 x 16 B)",
+          "role": "regs",
+          "kb": 0.5,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L1d",
+          "role": "l1",
+          "kb": 64,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 512,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L3 (DSU)",
+          "role": "l3",
+          "kb": 4096,
+          "scope": "shared"
+        }
+      ],
+      "programming": [
+        "NEON intrinsics",
+        "Arm Compute Library / XNNPACK",
+        "LLVM AArch64 backend"
+      ],
+      "gotchas": [
+        "Small caches and a thermally limited clock: sustained speed is below peak",
+        "DRAM bandwidth is shared with every other IP on the SoC"
+      ],
+      "sources_to_check": [
+        "Arm Cortex-A78 TRM",
+        "Arm Software Optimization Guide"
+      ],
       "segment": "Client and mobile",
-      "used_for": ["Application cores in phones and tablets", "Running the parts of an AI pipeline that do not fit the NPU, plus pre/post-processing", "A common compile target for mobile apps and mobile ML runtimes"],
-      "verified": false
+      "used_for": [
+        "Application cores in phones and tablets",
+        "Running the parts of an AI pipeline that do not fit the NPU, plus pre/post-processing",
+        "A common compile target for mobile apps and mobile ML runtimes"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "C++ with NEON intrinsics",
+          "XNNPACK or Arm Compute Library"
+        ],
+        "lowering": [
+          "Clang",
+          "LLVM IR",
+          "AArch64 backend"
+        ],
+        "who_tiles": "you",
+        "start_here": "Port the x86 micro-kernel to NEON (4x4 or 8x8 f32), then compare register pressure.",
+        "skill": "Register tiling with fewer vector registers"
+      }
     },
     {
-      "id": "nvidia-a100", "name": "NVIDIA A100 SXM 80GB", "vendor": "NVIDIA",
-      "path": ["Parallel accelerators", "GPU: SIMT + tensor cores", "Datacenter (NVIDIA)"],
-      "archetype": "simt_gpu",
-      "units": {"count": 108, "name": "SM"},
-      "vector": null,
-      "matrix_unit": {"name": "Tensor Core (mma.sync)", "m": 16, "n": 8, "k": 16, "dtype": ["f16", "bf16"]},
-      "dtypes": ["f16", "bf16"], "peak_gflops": {"f16": 312000, "bf16": 312000},
-      "dram": {"name": "HBM2e", "gb": 80, "gbps": 2039},
-      "memory": [
-        {"name": "Register file", "role": "regs", "kb": 256, "scope": "per_unit"},
-        {"name": "Shared memory / L1", "role": "smem", "kb": 164, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 40960, "scope": "shared"}
+      "id": "nvidia-a100",
+      "name": "NVIDIA A100 SXM 80GB",
+      "vendor": "NVIDIA",
+      "path": [
+        "Parallel accelerators",
+        "GPU: SIMT + tensor cores",
+        "Datacenter (NVIDIA)"
       ],
-      "gpu": {"warp": 32, "regs_per_unit": 65536, "max_regs_thread": 255, "stages": 3},
-      "programming": ["CUDA C++", "CUTLASS / CuTe", "Triton", "cuBLAS", "PTX"],
-      "gotchas": ["Shared-memory bank conflicts: swizzled layouts + ldmatrix", "cp.async multi-stage pipelines hide global-memory latency", "Wave quantization: the tile count versus 108 SMs"],
-      "sources_to_check": ["NVIDIA A100 whitepaper", "CUDA C++ Programming Guide (compute capability 8.0)"],
+      "archetype": "simt_gpu",
+      "units": {
+        "count": 108,
+        "name": "SM"
+      },
+      "vector": null,
+      "matrix_unit": {
+        "name": "Tensor Core (mma.sync)",
+        "m": 16,
+        "n": 8,
+        "k": 16,
+        "dtype": [
+          "f16",
+          "bf16"
+        ]
+      },
+      "dtypes": [
+        "f16",
+        "bf16"
+      ],
+      "peak_gflops": {
+        "f16": 312000,
+        "bf16": 312000
+      },
+      "dram": {
+        "name": "HBM2e",
+        "gb": 80,
+        "gbps": 2039
+      },
+      "memory": [
+        {
+          "name": "Register file",
+          "role": "regs",
+          "kb": 256,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Shared memory / L1",
+          "role": "smem",
+          "kb": 164,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 40960,
+          "scope": "shared"
+        }
+      ],
+      "gpu": {
+        "warp": 32,
+        "regs_per_unit": 65536,
+        "max_regs_thread": 255,
+        "stages": 3
+      },
+      "programming": [
+        "CUDA C++",
+        "CUTLASS / CuTe",
+        "Triton",
+        "cuBLAS",
+        "PTX"
+      ],
+      "gotchas": [
+        "Shared-memory bank conflicts: swizzled layouts + ldmatrix",
+        "cp.async multi-stage pipelines hide global-memory latency",
+        "Wave quantization: the tile count versus 108 SMs"
+      ],
+      "sources_to_check": [
+        "NVIDIA A100 whitepaper",
+        "CUDA C++ Programming Guide (compute capability 8.0)"
+      ],
       "segment": "Datacenter",
-      "used_for": ["Training and serving large neural networks", "High-performance and scientific computing", "The most common cloud GPU for years, so most kernels and papers target it"],
-      "verified": false
+      "used_for": [
+        "Training and serving large neural networks",
+        "High-performance and scientific computing",
+        "The most common cloud GPU for years, so most kernels and papers target it"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "CUDA C++",
+          "CUTLASS / CuTe templates",
+          "Triton (tile-level Python)"
+        ],
+        "lowering": [
+          "NVCC or Clang",
+          "NVVM IR",
+          "PTX",
+          "SASS (ptxas)"
+        ],
+        "who_tiles": "you",
+        "start_here": "Write a CUDA shared-memory tiled GEMM, then the same in Triton, then read what CUTLASS picks.",
+        "skill": "Shared-memory tiles, cp.async pipelines, mma fragments, occupancy"
+      }
     },
     {
-      "id": "nvidia-h100", "name": "NVIDIA H100 SXM", "vendor": "NVIDIA",
-      "path": ["Parallel accelerators", "GPU: SIMT + tensor cores", "Datacenter (NVIDIA)"],
-      "archetype": "simt_gpu",
-      "units": {"count": 132, "name": "SM"},
-      "vector": null,
-      "matrix_unit": {"name": "Tensor Core (wgmma m64nNk16, N=8..256)", "m": 64, "n": 8, "k": 16, "dtype": ["f16", "bf16"]},
-      "dtypes": ["f16", "bf16"], "peak_gflops": {"f16": 989000, "bf16": 989000},
-      "dram": {"name": "HBM3", "gb": 80, "gbps": 3350},
-      "memory": [
-        {"name": "Register file", "role": "regs", "kb": 256, "scope": "per_unit"},
-        {"name": "Shared memory / L1", "role": "smem", "kb": 227, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 51200, "scope": "shared"}
+      "id": "nvidia-h100",
+      "name": "NVIDIA H100 SXM",
+      "vendor": "NVIDIA",
+      "path": [
+        "Parallel accelerators",
+        "GPU: SIMT + tensor cores",
+        "Datacenter (NVIDIA)"
       ],
-      "gpu": {"warp": 32, "regs_per_unit": 65536, "max_regs_thread": 255, "stages": 4},
-      "programming": ["CUDA C++", "CUTLASS 3 / CuTe", "Triton", "cuBLAS", "PTX (wgmma, TMA)"],
-      "gotchas": ["TMA copies whole tiles asynchronously from a descriptor: producer/consumer warp specialization becomes part of the kernel", "wgmma reads operands straight from shared memory and needs a swizzled layout", "Thread-block clusters share distributed shared memory"],
-      "sources_to_check": ["NVIDIA H100 whitepaper", "PTX ISA (wgmma, cp.async.bulk)"],
+      "archetype": "simt_gpu",
+      "units": {
+        "count": 132,
+        "name": "SM"
+      },
+      "vector": null,
+      "matrix_unit": {
+        "name": "Tensor Core (wgmma m64nNk16, N=8..256)",
+        "m": 64,
+        "n": 8,
+        "k": 16,
+        "dtype": [
+          "f16",
+          "bf16"
+        ]
+      },
+      "dtypes": [
+        "f16",
+        "bf16"
+      ],
+      "peak_gflops": {
+        "f16": 989000,
+        "bf16": 989000
+      },
+      "dram": {
+        "name": "HBM3",
+        "gb": 80,
+        "gbps": 3350
+      },
+      "memory": [
+        {
+          "name": "Register file",
+          "role": "regs",
+          "kb": 256,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Shared memory / L1",
+          "role": "smem",
+          "kb": 227,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 51200,
+          "scope": "shared"
+        }
+      ],
+      "gpu": {
+        "warp": 32,
+        "regs_per_unit": 65536,
+        "max_regs_thread": 255,
+        "stages": 4
+      },
+      "programming": [
+        "CUDA C++",
+        "CUTLASS 3 / CuTe",
+        "Triton",
+        "cuBLAS",
+        "PTX (wgmma, TMA)"
+      ],
+      "gotchas": [
+        "TMA copies whole tiles asynchronously from a descriptor: producer/consumer warp specialization becomes part of the kernel",
+        "wgmma reads operands straight from shared memory and needs a swizzled layout",
+        "Thread-block clusters share distributed shared memory"
+      ],
+      "sources_to_check": [
+        "NVIDIA H100 whitepaper",
+        "PTX ISA (wgmma, cp.async.bulk)"
+      ],
       "segment": "Datacenter",
-      "used_for": ["Training and serving the largest models, including low-precision (FP8) inference", "High-throughput transformer workloads in cloud and on-premise clusters"],
-      "verified": false
+      "used_for": [
+        "Training and serving the largest models, including low-precision (FP8) inference",
+        "High-throughput transformer workloads in cloud and on-premise clusters"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "CUDA C++ with CUTLASS 3 / CuTe",
+          "Triton",
+          "PTX for wgmma and TMA"
+        ],
+        "lowering": [
+          "NVCC or Clang",
+          "NVVM IR",
+          "PTX (wgmma, TMA)",
+          "SASS"
+        ],
+        "who_tiles": "you",
+        "start_here": "Start from a Triton GEMM on H100, then read how CuTe expresses TMA and warpgroup MMA.",
+        "skill": "TMA descriptors, warpgroup MMA, thread block clusters"
+      }
     },
     {
-      "id": "nvidia-jetson-agx-orin", "name": "NVIDIA Jetson AGX Orin (GPU)", "vendor": "NVIDIA",
-      "path": ["Parallel accelerators", "GPU: SIMT + tensor cores", "Embedded (NVIDIA Jetson)"],
-      "archetype": "simt_gpu",
-      "units": {"count": 16, "name": "SM"},
-      "vector": null,
-      "matrix_unit": {"name": "Tensor Core (mma.sync)", "m": 16, "n": 8, "k": 16, "dtype": ["f16"]},
-      "dtypes": ["f16"], "peak_gflops": {"f16": 42500},
-      "dram": {"name": "LPDDR5 (shared with CPU)", "gb": 64, "gbps": 204.8},
-      "memory": [
-        {"name": "Register file", "role": "regs", "kb": 256, "scope": "per_unit"},
-        {"name": "Shared memory / L1", "role": "smem", "kb": 164, "scope": "per_unit"},
-        {"name": "L2", "role": "l2", "kb": 4096, "scope": "shared"}
+      "id": "nvidia-jetson-agx-orin",
+      "name": "NVIDIA Jetson AGX Orin (GPU)",
+      "vendor": "NVIDIA",
+      "path": [
+        "Parallel accelerators",
+        "GPU: SIMT + tensor cores",
+        "Embedded (NVIDIA Jetson)"
       ],
-      "gpu": {"warp": 32, "regs_per_unit": 65536, "max_regs_thread": 255, "stages": 3},
-      "programming": ["CUDA C++", "TensorRT", "CUTLASS", "Triton"],
-      "gotchas": ["Same CUDA programming model as A100 but 16 SMs and ~10x less bandwidth: the same tile is memory-bound here", "CPU and GPU share one DRAM: bandwidth is a system budget", "Power modes change clocks, so peak is not constant"],
-      "sources_to_check": ["Jetson AGX Orin data sheet", "CUDA Programming Guide (compute capability 8.7)"],
+      "archetype": "simt_gpu",
+      "units": {
+        "count": 16,
+        "name": "SM"
+      },
+      "vector": null,
+      "matrix_unit": {
+        "name": "Tensor Core (mma.sync)",
+        "m": 16,
+        "n": 8,
+        "k": 16,
+        "dtype": [
+          "f16"
+        ]
+      },
+      "dtypes": [
+        "f16"
+      ],
+      "peak_gflops": {
+        "f16": 42500
+      },
+      "dram": {
+        "name": "LPDDR5 (shared with CPU)",
+        "gb": 64,
+        "gbps": 204.8
+      },
+      "memory": [
+        {
+          "name": "Register file",
+          "role": "regs",
+          "kb": 256,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Shared memory / L1",
+          "role": "smem",
+          "kb": 164,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2",
+          "role": "l2",
+          "kb": 4096,
+          "scope": "shared"
+        }
+      ],
+      "gpu": {
+        "warp": 32,
+        "regs_per_unit": 65536,
+        "max_regs_thread": 255,
+        "stages": 3
+      },
+      "programming": [
+        "CUDA C++",
+        "TensorRT",
+        "CUTLASS",
+        "Triton"
+      ],
+      "gotchas": [
+        "Same CUDA programming model as A100 but 16 SMs and ~10x less bandwidth: the same tile is memory-bound here",
+        "CPU and GPU share one DRAM: bandwidth is a system budget",
+        "Power modes change clocks, so peak is not constant"
+      ],
+      "sources_to_check": [
+        "Jetson AGX Orin data sheet",
+        "CUDA Programming Guide (compute capability 8.7)"
+      ],
       "segment": "Edge and embedded",
-      "used_for": ["Robots, drones and other autonomous machines", "Driver-assistance and in-vehicle computing", "Real-time camera inference on edge boxes, within a power budget"],
-      "verified": false
+      "used_for": [
+        "Robots, drones and other autonomous machines",
+        "Driver-assistance and in-vehicle computing",
+        "Real-time camera inference on edge boxes, within a power budget"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "CUDA C++",
+          "TensorRT for deployment",
+          "Triton or CUTLASS for custom ops"
+        ],
+        "lowering": [
+          "NVCC",
+          "PTX",
+          "SASS",
+          "TensorRT engine build"
+        ],
+        "who_tiles": "library",
+        "start_here": "Build the model through TensorRT, profile it, and only write CUDA for the ops it fuses badly.",
+        "skill": "Power and memory limits on a shared-memory SoC"
+      }
     },
     {
-      "id": "amd-mi300x", "name": "AMD Instinct MI300X", "vendor": "AMD",
-      "path": ["Parallel accelerators", "GPU: SIMT + tensor cores", "Datacenter (AMD)"],
+      "id": "amd-mi300x",
+      "name": "AMD Instinct MI300X",
+      "vendor": "AMD",
+      "path": [
+        "Parallel accelerators",
+        "GPU: SIMT + tensor cores",
+        "Datacenter (AMD)"
+      ],
       "archetype": "simt_gpu",
-      "units": {"count": 304, "name": "CU"},
+      "units": {
+        "count": 304,
+        "name": "CU"
+      },
       "vector": null,
-      "matrix_unit": {"name": "MFMA (matrix core)", "m": 32, "n": 32, "k": 8, "dtype": ["f16", "bf16"]},
-      "dtypes": ["f16", "bf16"], "peak_gflops": {"f16": 1307400, "bf16": 1307400},
-      "dram": {"name": "HBM3", "gb": 192, "gbps": 5300},
-      "memory": [
-        {"name": "Register file (VGPR+AGPR)", "role": "regs", "kb": 512, "scope": "per_unit"},
-        {"name": "LDS", "role": "smem", "kb": 64, "scope": "per_unit"},
-        {"name": "Infinity Cache (last-level)", "role": "l3", "kb": 262144, "scope": "shared"}
+      "matrix_unit": {
+        "name": "MFMA (matrix core)",
+        "m": 32,
+        "n": 32,
+        "k": 8,
+        "dtype": [
+          "f16",
+          "bf16"
+        ]
+      },
+      "dtypes": [
+        "f16",
+        "bf16"
       ],
-      "gpu": {"warp": 64, "regs_per_unit": 131072, "max_regs_thread": 512, "stages": 2},
-      "programming": ["HIP", "Composable Kernel / rocWMMA", "Triton (ROCm)", "LLVM AMDGPU backend"],
-      "gotchas": ["Wavefront is 64 lanes, not 32", "LDS is 64 KB, much smaller than NVIDIA shared memory, so tiles shrink or stages drop", "Chiplets (8 XCDs): L2 is per-XCD, so workgroup placement changes cache reuse"],
-      "sources_to_check": ["AMD CDNA3 ISA guide", "MI300X data sheet"],
+      "peak_gflops": {
+        "f16": 1307400,
+        "bf16": 1307400
+      },
+      "dram": {
+        "name": "HBM3",
+        "gb": 192,
+        "gbps": 5300
+      },
+      "memory": [
+        {
+          "name": "Register file (VGPR+AGPR)",
+          "role": "regs",
+          "kb": 512,
+          "scope": "per_unit"
+        },
+        {
+          "name": "LDS",
+          "role": "smem",
+          "kb": 64,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Infinity Cache (last-level)",
+          "role": "l3",
+          "kb": 262144,
+          "scope": "shared"
+        }
+      ],
+      "gpu": {
+        "warp": 64,
+        "regs_per_unit": 131072,
+        "max_regs_thread": 512,
+        "stages": 2
+      },
+      "programming": [
+        "HIP",
+        "Composable Kernel / rocWMMA",
+        "Triton (ROCm)",
+        "LLVM AMDGPU backend"
+      ],
+      "gotchas": [
+        "Wavefront is 64 lanes, not 32",
+        "LDS is 64 KB, much smaller than NVIDIA shared memory, so tiles shrink or stages drop",
+        "Chiplets (8 XCDs): L2 is per-XCD, so workgroup placement changes cache reuse"
+      ],
+      "sources_to_check": [
+        "AMD CDNA3 ISA guide",
+        "MI300X data sheet"
+      ],
       "segment": "Datacenter",
-      "used_for": ["Training and serving large models, especially memory-hungry ones (192 GB per card)", "A second source of datacenter GPUs in clouds and supercomputers"],
-      "verified": false
+      "used_for": [
+        "Training and serving large models, especially memory-hungry ones (192 GB per card)",
+        "A second source of datacenter GPUs in clouds and supercomputers"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "HIP (CUDA-like)",
+          "Composable Kernel",
+          "Triton for ROCm"
+        ],
+        "lowering": [
+          "Clang",
+          "LLVM AMDGPU backend",
+          "GCN/CDNA ISA"
+        ],
+        "who_tiles": "you",
+        "start_here": "Hipify a CUDA tiled GEMM, then retune for wave64 and MFMA shapes.",
+        "skill": "Wave64, MFMA instructions, LDS bank conflicts"
+      }
     },
     {
-      "id": "hexagon-v68-hvx", "name": "Qualcomm Hexagon V68 (HVX 128B)", "vendor": "Qualcomm",
-      "path": ["Software-managed accelerators", "DSP: vector + scratchpad", "Qualcomm Hexagon"],
+      "id": "hexagon-v68-hvx",
+      "name": "Qualcomm Hexagon V68 (HVX 128B)",
+      "vendor": "Qualcomm",
+      "path": [
+        "Software-managed accelerators",
+        "DSP: vector + scratchpad",
+        "Qualcomm Hexagon"
+      ],
       "archetype": "scratchpad_dma",
-      "units": {"count": 1, "name": "HVX context"},
-      "vector": {"bits": 1024, "regs": 32},
+      "units": {
+        "count": 1,
+        "name": "HVX context"
+      },
+      "vector": {
+        "bits": 1024,
+        "regs": 32
+      },
       "matrix_unit": null,
-      "dtypes": ["i8", "f32"], "peak_gflops": {},
-      "dram": {"name": "LPDDR (system)", "gb": null, "gbps": null},
-      "memory": [
-        {"name": "Vector registers", "role": "regs", "kb": 4, "scope": "per_unit"},
-        {"name": "VTCM (size is configurable; nano-dsp-mlir assumes 256 KB)", "role": "spm", "kb": 256, "scope": "per_unit"},
-        {"name": "L2 cache", "role": "l2", "kb": 1024, "scope": "shared"}
+      "dtypes": [
+        "i8",
+        "f32"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 128},
-      "programming": ["Hexagon SDK (C/C++ HVX intrinsics)", "LLVM Hexagon backend", "QNN"],
-      "gotchas": ["HVX wants 128-byte vectors and 128-byte aligned data", "VTCM is software-managed: DMA brings tiles in, nothing is cached for you", "Loads through L2 are coherent, VTCM is not: the choice is per buffer"],
-      "sources_to_check": ["Hexagon V68 programmer's reference", "Hexagon SDK docs"],
+      "peak_gflops": {},
+      "dram": {
+        "name": "LPDDR (system)",
+        "gb": null,
+        "gbps": null
+      },
+      "memory": [
+        {
+          "name": "Vector registers",
+          "role": "regs",
+          "kb": 4,
+          "scope": "per_unit"
+        },
+        {
+          "name": "VTCM (size is configurable; nano-dsp-mlir assumes 256 KB)",
+          "role": "spm",
+          "kb": 256,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2 cache",
+          "role": "l2",
+          "kb": 1024,
+          "scope": "shared"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 128
+      },
+      "programming": [
+        "Hexagon SDK (C/C++ HVX intrinsics)",
+        "LLVM Hexagon backend",
+        "QNN"
+      ],
+      "gotchas": [
+        "HVX wants 128-byte vectors and 128-byte aligned data",
+        "VTCM is software-managed: DMA brings tiles in, nothing is cached for you",
+        "Loads through L2 are coherent, VTCM is not: the choice is per buffer"
+      ],
+      "sources_to_check": [
+        "Hexagon V68 programmer's reference",
+        "Hexagon SDK docs"
+      ],
       "segment": "Client and mobile",
-      "used_for": ["Camera and image processing, audio and sensor processing on Snapdragon phones", "int8 neural-network inference through the vector unit", "Always-on, low-power background tasks"],
-      "verified": false
+      "used_for": [
+        "Camera and image processing, audio and sensor processing on Snapdragon phones",
+        "int8 neural-network inference through the vector unit",
+        "Always-on, low-power background tasks"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "C/C++ with HVX intrinsics (Hexagon SDK)",
+          "QNN for whole models"
+        ],
+        "lowering": [
+          "Hexagon Clang",
+          "LLVM Hexagon backend",
+          "VLIW packets"
+        ],
+        "who_tiles": "you",
+        "start_here": "Write a vector add and a dot product with HVX intrinsics, aligned to 128 bytes, and check the packet schedule.",
+        "skill": "Wide aligned vectors, VLIW packing, DMA into VTCM"
+      }
     },
     {
-      "id": "hexagon-v73-hmx", "name": "Qualcomm Hexagon V73 (HVX + HMX)", "vendor": "Qualcomm",
-      "path": ["Software-managed accelerators", "DSP: vector + scratchpad", "Qualcomm Hexagon"],
-      "archetype": "scratchpad_dma",
-      "units": {"count": 1, "name": "HVX/HMX context"},
-      "vector": {"bits": 1024, "regs": 32},
-      "matrix_unit": {"name": "HMX (32x32 tiles)", "m": 32, "n": 32, "k": 32, "dtype": ["f16", "i8"]},
-      "dtypes": ["i8", "f16"], "peak_gflops": {},
-      "dram": {"name": "LPDDR (system)", "gb": null, "gbps": null},
-      "memory": [
-        {"name": "Vector registers", "role": "regs", "kb": 4, "scope": "per_unit"},
-        {"name": "VTCM", "role": "spm", "kb": 8192, "scope": "per_unit"},
-        {"name": "L2 cache", "role": "l2", "kb": 1024, "scope": "shared"}
+      "id": "hexagon-v73-hmx",
+      "name": "Qualcomm Hexagon V73 (HVX + HMX)",
+      "vendor": "Qualcomm",
+      "path": [
+        "Software-managed accelerators",
+        "DSP: vector + scratchpad",
+        "Qualcomm Hexagon"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 128},
-      "programming": ["Hexagon SDK (HVX/HMX intrinsics)", "QNN", "LLVM Hexagon backend"],
-      "gotchas": ["HMX consumes fixed 2 KB tiles in a special layout: the unit, not the cache, dictates the tile", "Weights and activations both live in VTCM; DMA double-buffers them"],
-      "sources_to_check": ["Hexagon V73 programmer's reference", "Hexagon SDK HMX docs"],
+      "archetype": "scratchpad_dma",
+      "units": {
+        "count": 1,
+        "name": "HVX/HMX context"
+      },
+      "vector": {
+        "bits": 1024,
+        "regs": 32
+      },
+      "matrix_unit": {
+        "name": "HMX (32x32 tiles)",
+        "m": 32,
+        "n": 32,
+        "k": 32,
+        "dtype": [
+          "f16",
+          "i8"
+        ]
+      },
+      "dtypes": [
+        "i8",
+        "f16"
+      ],
+      "peak_gflops": {},
+      "dram": {
+        "name": "LPDDR (system)",
+        "gb": null,
+        "gbps": null
+      },
+      "memory": [
+        {
+          "name": "Vector registers",
+          "role": "regs",
+          "kb": 4,
+          "scope": "per_unit"
+        },
+        {
+          "name": "VTCM",
+          "role": "spm",
+          "kb": 8192,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L2 cache",
+          "role": "l2",
+          "kb": 1024,
+          "scope": "shared"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 128
+      },
+      "programming": [
+        "Hexagon SDK (HVX/HMX intrinsics)",
+        "QNN",
+        "LLVM Hexagon backend"
+      ],
+      "gotchas": [
+        "HMX consumes fixed 2 KB tiles in a special layout: the unit, not the cache, dictates the tile",
+        "Weights and activations both live in VTCM; DMA double-buffers them"
+      ],
+      "sources_to_check": [
+        "Hexagon V73 programmer's reference",
+        "Hexagon SDK HMX docs"
+      ],
       "segment": "Client and mobile",
-      "used_for": ["On-device AI in phones and laptops: vision, speech and small language models", "Sustained inference at low power, where a GPU would drain the battery"],
-      "verified": false
+      "used_for": [
+        "On-device AI in phones and laptops: vision, speech and small language models",
+        "Sustained inference at low power, where a GPU would drain the battery"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "C/C++ with HVX and HMX intrinsics",
+          "QNN"
+        ],
+        "lowering": [
+          "Hexagon Clang",
+          "LLVM Hexagon backend",
+          "HMX 32x32 tile ops"
+        ],
+        "who_tiles": "library",
+        "start_here": "Use QNN and read the generated graph. HMX is hard to reach directly, so study the tile layout it expects.",
+        "skill": "Tile layout for the matrix unit, VTCM budgeting, DMA overlap"
+      }
     },
     {
-      "id": "huawei-ascend-910b", "name": "Huawei Ascend 910B (AI Core)", "vendor": "Huawei",
-      "path": ["Software-managed accelerators", "NPU: matrix engine + scratchpad", "Huawei Ascend"],
-      "archetype": "scratchpad_dma",
-      "units": {"count": 24, "name": "AI Core"},
-      "vector": {"bits": 2048, "regs": 32},
-      "matrix_unit": {"name": "Cube unit (16x16x16)", "m": 16, "n": 16, "k": 16, "dtype": ["f16", "bf16"]},
-      "dtypes": ["f16", "bf16"], "peak_gflops": {"f16": 313000, "bf16": 313000},
-      "dram": {"name": "HBM2e", "gb": 64, "gbps": 1600},
-      "memory": [
-        {"name": "L0A/L0B/L0C (Cube operands/accumulator)", "role": "regs", "kb": 256, "scope": "per_unit"},
-        {"name": "L1 buffer (staging for L0A/L0B)", "role": "spm", "kb": 512, "scope": "per_unit"},
-        {"name": "Unified Buffer (vector unit)", "role": "ub", "kb": 192, "scope": "per_unit"}
+      "id": "huawei-ascend-910b",
+      "name": "Huawei Ascend 910B (AI Core)",
+      "vendor": "Huawei",
+      "path": [
+        "Software-managed accelerators",
+        "NPU: matrix engine + scratchpad",
+        "Huawei Ascend"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 32},
-      "programming": ["Ascend C", "CANN", "TBE / AKG DSLs", "MindSpore"],
-      "gotchas": ["Memory hierarchy is explicit at every level: GM -> L1 -> L0A/L0B -> Cube -> L0C -> UB", "Cube wants fractal (16x16 block, NZ) layouts", "Cube and Vector engines are separate and synchronize with explicit flags"],
-      "sources_to_check": ["Ascend C programming guide", "CANN documentation"],
+      "archetype": "scratchpad_dma",
+      "units": {
+        "count": 24,
+        "name": "AI Core"
+      },
+      "vector": {
+        "bits": 2048,
+        "regs": 32
+      },
+      "matrix_unit": {
+        "name": "Cube unit (16x16x16)",
+        "m": 16,
+        "n": 16,
+        "k": 16,
+        "dtype": [
+          "f16",
+          "bf16"
+        ]
+      },
+      "dtypes": [
+        "f16",
+        "bf16"
+      ],
+      "peak_gflops": {
+        "f16": 313000,
+        "bf16": 313000
+      },
+      "dram": {
+        "name": "HBM2e",
+        "gb": 64,
+        "gbps": 1600
+      },
+      "memory": [
+        {
+          "name": "L0A/L0B/L0C (Cube operands/accumulator)",
+          "role": "regs",
+          "kb": 256,
+          "scope": "per_unit"
+        },
+        {
+          "name": "L1 buffer (staging for L0A/L0B)",
+          "role": "spm",
+          "kb": 512,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Unified Buffer (vector unit)",
+          "role": "ub",
+          "kb": 192,
+          "scope": "per_unit"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 32
+      },
+      "programming": [
+        "Ascend C",
+        "CANN",
+        "TBE / AKG DSLs",
+        "MindSpore"
+      ],
+      "gotchas": [
+        "Memory hierarchy is explicit at every level: GM -> L1 -> L0A/L0B -> Cube -> L0C -> UB",
+        "Cube wants fractal (16x16 block, NZ) layouts",
+        "Cube and Vector engines are separate and synchronize with explicit flags"
+      ],
+      "sources_to_check": [
+        "Ascend C programming guide",
+        "CANN documentation"
+      ],
       "segment": "Datacenter",
-      "used_for": ["Training and serving large models inside Huawei's CANN software ecosystem", "An accelerator family with its own compilers and kernel language (Ascend C)"],
-      "verified": false
+      "used_for": [
+        "Training and serving large models inside Huawei's CANN software ecosystem",
+        "An accelerator family with its own compilers and kernel language (Ascend C)"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "Ascend C",
+          "TBE / AKG DSLs",
+          "MindSpore or CANN graphs"
+        ],
+        "lowering": [
+          "graph IR",
+          "operator tiling",
+          "CANN runtime",
+          "AI Core instructions"
+        ],
+        "who_tiles": "you",
+        "start_here": "Write one Ascend C operator with an explicit tiling function and copy-in, compute, copy-out stages.",
+        "skill": "Explicit unified-buffer tiling, pipeline stages, cube/vector split"
+      }
     },
     {
-      "id": "amd-versal-aie-ml", "name": "AMD Versal AI Engine-ML array (VE2802 class)", "vendor": "AMD/Xilinx",
-      "path": ["Software-managed accelerators", "NPU: spatial array of tiles", "AMD Versal AIE"],
-      "archetype": "scratchpad_dma",
-      "units": {"count": 304, "name": "AIE-ML tile"},
-      "vector": {"bits": 512, "regs": 16},
-      "matrix_unit": {"name": "AIE-ML mmul", "m": 4, "n": 8, "k": 8, "dtype": ["i8"]},
-      "dtypes": ["i8"], "peak_gflops": {"i8": 389000},
-      "dram": {"name": "DDR/LPDDR via NoC", "gb": null, "gbps": null},
-      "memory": [
-        {"name": "Local data memory (per tile)", "role": "spm", "kb": 64, "scope": "per_unit"},
-        {"name": "Memory tile (L2, per column group)", "role": "l2mem", "kb": 512, "scope": "shared"}
+      "id": "amd-versal-aie-ml",
+      "name": "AMD Versal AI Engine-ML array (VE2802 class)",
+      "vendor": "AMD/Xilinx",
+      "path": [
+        "Software-managed accelerators",
+        "NPU: spatial array of tiles",
+        "AMD Versal AIE"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 32},
-      "programming": ["AIE kernels (C++ + intrinsics)", "ADF graphs", "MLIR-AIE", "Vitis AI"],
-      "gotchas": ["Memory is distributed: each tile owns 64 KB and reaches only neighbors, so placement is a graph-mapping problem", "Compute and data movement are spatial: kernels are placed on tiles and DMA/streams are routed", "The tile shape is set per kernel, but the whole array pipeline decides performance"],
-      "sources_to_check": ["AM020 AIE-ML architecture manual", "MLIR-AIE docs"],
+      "archetype": "scratchpad_dma",
+      "units": {
+        "count": 304,
+        "name": "AIE-ML tile"
+      },
+      "vector": {
+        "bits": 512,
+        "regs": 16
+      },
+      "matrix_unit": {
+        "name": "AIE-ML mmul",
+        "m": 4,
+        "n": 8,
+        "k": 8,
+        "dtype": [
+          "i8"
+        ]
+      },
+      "dtypes": [
+        "i8"
+      ],
+      "peak_gflops": {
+        "i8": 389000
+      },
+      "dram": {
+        "name": "DDR/LPDDR via NoC",
+        "gb": null,
+        "gbps": null
+      },
+      "memory": [
+        {
+          "name": "Local data memory (per tile)",
+          "role": "spm",
+          "kb": 64,
+          "scope": "per_unit"
+        },
+        {
+          "name": "Memory tile (L2, per column group)",
+          "role": "l2mem",
+          "kb": 512,
+          "scope": "shared"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 32
+      },
+      "programming": [
+        "AIE kernels (C++ + intrinsics)",
+        "ADF graphs",
+        "MLIR-AIE",
+        "Vitis AI"
+      ],
+      "gotchas": [
+        "Memory is distributed: each tile owns 64 KB and reaches only neighbors, so placement is a graph-mapping problem",
+        "Compute and data movement are spatial: kernels are placed on tiles and DMA/streams are routed",
+        "The tile shape is set per kernel, but the whole array pipeline decides performance"
+      ],
+      "sources_to_check": [
+        "AM020 AIE-ML architecture manual",
+        "MLIR-AIE docs"
+      ],
       "segment": "Edge and embedded",
-      "used_for": ["Edge AI and signal processing on adaptive chips: automotive, aerospace, industrial and video", "Fixed-latency streaming pipelines such as radar, wireless and video"],
-      "verified": false
+      "used_for": [
+        "Edge AI and signal processing on adaptive chips: automotive, aerospace, industrial and video",
+        "Fixed-latency streaming pipelines such as radar, wireless and video"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "AIE C++ kernels with intrinsics",
+          "ADF dataflow graphs",
+          "MLIR-AIE"
+        ],
+        "lowering": [
+          "MLIR-AIE",
+          "LLVM-based AIE backend",
+          "placement and routing"
+        ],
+        "who_tiles": "you",
+        "start_here": "Map a small GEMM across a few AIE tiles with MLIR-AIE and watch the data-movement code it generates.",
+        "skill": "Spatial placement, tile-to-tile streaming, local memory limits"
+      }
     },
     {
-      "id": "arm-ethos-u55", "name": "Arm Ethos-U55 (256 MAC configuration)", "vendor": "Arm",
-      "path": ["Software-managed accelerators", "NPU: microcontroller class", "Arm Ethos"],
-      "archetype": "scratchpad_dma",
-      "units": {"count": 1, "name": "NPU"},
-      "vector": {"bits": 128, "regs": 8},
-      "matrix_unit": null,
-      "dtypes": ["i8"], "peak_gflops": {"i8": 256},
-      "dram": {"name": "Flash / external memory over AXI", "gb": null, "gbps": null},
-      "memory": [
-        {"name": "On-chip SRAM (system-configured)", "role": "spm", "kb": 256, "scope": "per_unit"}
+      "id": "arm-ethos-u55",
+      "name": "Arm Ethos-U55 (256 MAC configuration)",
+      "vendor": "Arm",
+      "path": [
+        "Software-managed accelerators",
+        "NPU: microcontroller class",
+        "Arm Ethos"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 16},
-      "programming": ["Vela compiler (offline)", "TensorFlow Lite Micro", "CMSIS-NN"],
-      "gotchas": ["The whole network is compiled ahead of time into a command stream: no runtime scheduling", "Weights stay in flash and are DMA'd (compressed) into SRAM", "int8 only; the MAC array shape here is illustrative"],
-      "sources_to_check": ["Arm Ethos-U55 TRM", "Vela documentation"],
+      "archetype": "scratchpad_dma",
+      "units": {
+        "count": 1,
+        "name": "NPU"
+      },
+      "vector": {
+        "bits": 128,
+        "regs": 8
+      },
+      "matrix_unit": null,
+      "dtypes": [
+        "i8"
+      ],
+      "peak_gflops": {
+        "i8": 256
+      },
+      "dram": {
+        "name": "Flash / external memory over AXI",
+        "gb": null,
+        "gbps": null
+      },
+      "memory": [
+        {
+          "name": "On-chip SRAM (system-configured)",
+          "role": "spm",
+          "kb": 256,
+          "scope": "per_unit"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 16
+      },
+      "programming": [
+        "Vela compiler (offline)",
+        "TensorFlow Lite Micro",
+        "CMSIS-NN"
+      ],
+      "gotchas": [
+        "The whole network is compiled ahead of time into a command stream: no runtime scheduling",
+        "Weights stay in flash and are DMA'd (compressed) into SRAM",
+        "int8 only; the MAC array shape here is illustrative"
+      ],
+      "sources_to_check": [
+        "Arm Ethos-U55 TRM",
+        "Vela documentation"
+      ],
       "segment": "Microcontroller",
-      "used_for": ["Always-on machine learning in battery-powered devices: keyword spotting, sensor and anomaly detection, small vision models", "Models compiled ahead of time to run next to a Cortex-M microcontroller"],
-      "verified": false
+      "used_for": [
+        "Always-on machine learning in battery-powered devices: keyword spotting, sensor and anomaly detection, small vision models",
+        "Models compiled ahead of time to run next to a Cortex-M microcontroller"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "TensorFlow Lite model",
+          "CMSIS-NN for CPU fallbacks"
+        ],
+        "lowering": [
+          "TFLite",
+          "Vela compiler (offline)",
+          "command stream",
+          "NPU executes"
+        ],
+        "who_tiles": "compiler",
+        "start_here": "Run a quantized model through Vela and read its report: it picks the tiling and SRAM use for you.",
+        "skill": "Quantization and reading the compiler's memory report"
+      }
     },
     {
-      "id": "google-tpu-v5e", "name": "Google TPU v5e (per chip)", "vendor": "Google",
-      "path": ["Software-managed accelerators", "Systolic array", "Google TPU"],
+      "id": "google-tpu-v5e",
+      "name": "Google TPU v5e (per chip)",
+      "vendor": "Google",
+      "path": [
+        "Software-managed accelerators",
+        "Systolic array",
+        "Google TPU"
+      ],
       "archetype": "scratchpad_dma",
-      "units": {"count": 1, "name": "TensorCore (4 MXU)"},
+      "units": {
+        "count": 1,
+        "name": "TensorCore (4 MXU)"
+      },
       "vector": null,
-      "matrix_unit": {"name": "MXU 128x128 systolic", "m": 128, "n": 128, "k": 128, "dtype": ["bf16", "i8"]},
+      "matrix_unit": {
+        "name": "MXU 128x128 systolic",
+        "m": 128,
+        "n": 128,
+        "k": 128,
+        "dtype": [
+          "bf16",
+          "i8"
+        ]
+      },
       "align_m": 8,
-      "dtypes": ["bf16", "i8"], "peak_gflops": {"bf16": 197000, "i8": 394000},
-      "dram": {"name": "HBM2", "gb": 16, "gbps": 819},
-      "memory": [
-        {"name": "VMEM (compiler-managed scratchpad)", "role": "spm", "kb": 131072, "scope": "per_unit"}
+      "dtypes": [
+        "bf16",
+        "i8"
       ],
-      "dma": {"latency_ns": null, "align_bytes": 512},
-      "programming": ["XLA", "JAX / Pallas", "StableHLO / MLIR"],
-      "gotchas": ["Shapes are padded to (8,128) tiles: odd dimensions waste MXU cycles", "Weight-stationary: the streamed dimension should be >= 128 to amortize weight loads", "XLA decides fusion and layout; you tune with sharding and Pallas BlockSpecs"],
-      "sources_to_check": ["Google Cloud TPU v5e docs", "Pallas TPU docs (VMEM size)"],
+      "peak_gflops": {
+        "bf16": 197000,
+        "i8": 394000
+      },
+      "dram": {
+        "name": "HBM2",
+        "gb": 16,
+        "gbps": 819
+      },
+      "memory": [
+        {
+          "name": "VMEM (compiler-managed scratchpad)",
+          "role": "spm",
+          "kb": 131072,
+          "scope": "per_unit"
+        }
+      ],
+      "dma": {
+        "latency_ns": null,
+        "align_bytes": 512
+      },
+      "programming": [
+        "XLA",
+        "JAX / Pallas",
+        "StableHLO / MLIR"
+      ],
+      "gotchas": [
+        "Shapes are padded to (8,128) tiles: odd dimensions waste MXU cycles",
+        "Weight-stationary: the streamed dimension should be >= 128 to amortize weight loads",
+        "XLA decides fusion and layout; you tune with sharding and Pallas BlockSpecs"
+      ],
+      "sources_to_check": [
+        "Google Cloud TPU v5e docs",
+        "Pallas TPU docs (VMEM size)"
+      ],
       "segment": "Datacenter",
-      "used_for": ["Cost-efficient inference and fine-tuning in Google Cloud", "Models written in JAX or other frameworks that compile through XLA"],
-      "verified": false
+      "used_for": [
+        "Cost-efficient inference and fine-tuning in Google Cloud",
+        "Models written in JAX or other frameworks that compile through XLA"
+      ],
+      "verified": false,
+      "toolchain": {
+        "write_in": [
+          "JAX",
+          "Pallas for custom kernels"
+        ],
+        "lowering": [
+          "JAX",
+          "StableHLO (MLIR)",
+          "XLA",
+          "TPU backend"
+        ],
+        "who_tiles": "compiler",
+        "start_here": "Write the matmul in JAX, inspect the HLO, and only reach for Pallas when XLA's tiling is not enough.",
+        "skill": "Reading HLO, sharding, Pallas block specs"
+      }
     },
     {
-      "id": "mn1-mock", "name": "MN1 (mock-npu-bench simulator)", "vendor": "you",
-      "path": ["Simulated", "Teaching", "MN1 (mock-npu-bench)"],
-      "archetype": "scratchpad_dma",
-      "units": {"count": 1, "name": "core"},
-      "vector": {"bits": 256, "regs": 16},
-      "matrix_unit": null,
-      "dtypes": ["f32"], "peak_gflops": {"f32": 16},
-      "dram": {"name": "DRAM (modeled, 16 B/cycle at 1 GHz)", "gb": null, "gbps": 16},
-      "memory": [
-        {"name": "SPM", "role": "spm", "kb": 64, "scope": "per_unit"}
+      "id": "mn1-mock",
+      "name": "MN1 (mock-npu-bench simulator)",
+      "vendor": "you",
+      "path": [
+        "Simulated",
+        "Teaching",
+        "MN1 (mock-npu-bench)"
       ],
-      "dma": {"latency_ns": 40, "align_bytes": 32, "burst_bytes": 16},
-      "programming": ["MN1 assembly"],
-      "gotchas": ["Defined by docs/manual.md in ../mock-npu-bench; clock of 1 GHz is an assumption of this atlas"],
-      "sources_to_check": ["../mock-npu-bench/docs/manual.md"],
+      "archetype": "scratchpad_dma",
+      "units": {
+        "count": 1,
+        "name": "core"
+      },
+      "vector": {
+        "bits": 256,
+        "regs": 16
+      },
+      "matrix_unit": null,
+      "dtypes": [
+        "f32"
+      ],
+      "peak_gflops": {
+        "f32": 16
+      },
+      "dram": {
+        "name": "DRAM (modeled, 16 B/cycle at 1 GHz)",
+        "gb": null,
+        "gbps": 16
+      },
+      "memory": [
+        {
+          "name": "SPM",
+          "role": "spm",
+          "kb": 64,
+          "scope": "per_unit"
+        }
+      ],
+      "dma": {
+        "latency_ns": 40,
+        "align_bytes": 32,
+        "burst_bytes": 16
+      },
+      "programming": [
+        "MN1 assembly"
+      ],
+      "gotchas": [
+        "Defined by docs/manual.md in ../mock-npu-bench; clock of 1 GHz is an assumption of this atlas"
+      ],
+      "sources_to_check": [
+        "../mock-npu-bench/docs/manual.md"
+      ],
       "segment": "Teaching",
-      "used_for": ["Practice target: learn bring-up, DMA overlap and tiling against a written manual", "Companion to the mock-npu-bench simulator"],
-      "verified": true
+      "used_for": [
+        "Practice target: learn bring-up, DMA overlap and tiling against a written manual",
+        "Companion to the mock-npu-bench simulator"
+      ],
+      "verified": true,
+      "toolchain": {
+        "write_in": [
+          "MN1 assembly",
+          "gen_matmul.py generator"
+        ],
+        "lowering": [
+          "assembler",
+          "machine simulator"
+        ],
+        "who_tiles": "you",
+        "start_here": "Run tools/gen_matmul.py, look at the trace in Perfetto, then change the tile and watch the DMA overlap.",
+        "skill": "Double buffering and DMA tags on a 64 KiB scratchpad"
+      }
     }
   ]
 }

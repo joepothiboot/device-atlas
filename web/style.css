@@ -289,6 +289,14 @@ table.versus { min-width: 520px; table-layout: fixed; }
   table.versus { min-width: 560px; }
 }
 
+.who { display: inline-block; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--ink); font-weight: 500; font-size: 14px; }
+.who-compiler, .who-library { border-style: dashed; }
+.pipeline { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 4px; align-items: center; }
+.pipeline li { font-family: var(--mono); font-size: 13px; padding: 2px 8px; background: var(--soft); border-radius: 4px; }
+.pipeline li + li::before { content: "→"; margin-right: 4px; margin-left: -4px; color: var(--muted); font-family: var(--sans); }
+
+ul.tight { margin: 0; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

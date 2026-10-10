@@ -38,6 +38,12 @@ def validate(dev):
         return errs
     if dev.get("segment") not in SEGMENTS:
         errs.append(f"segment must be one of {SEGMENTS}")
+    tc = dev.get("toolchain") or {}
+    for key in ("write_in", "lowering", "start_here", "who_tiles", "skill"):
+        if not tc.get(key):
+            errs.append(f"toolchain.{key} is required")
+    if tc.get("who_tiles") not in (None, "you", "compiler", "library"):
+        errs.append("toolchain.who_tiles must be you, compiler or library")
     if not dev.get("used_for"):
         errs.append("used_for must list at least one purpose")
     if len(dev["path"]) != 3:

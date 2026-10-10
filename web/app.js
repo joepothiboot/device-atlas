@@ -82,7 +82,8 @@ function kids(node) {
   for (const d of node.devices) out.push({ type: "device", dev: d });
   return out;
 }
-const matches = (d, q) => !q || [d.name, d.id, d.vendor, d.segment, ...d.path, ...(d.programming || []), ...(d.used_for || [])].join(" ").toLowerCase().includes(q);
+const WHO = { you: "You do", compiler: "The compiler does", library: "A library does" };
+const matches = (d, q) => !q || [d.name, d.id, d.vendor, d.segment, ...d.path, ...(d.programming || []), ...(d.used_for || []), ...(d.toolchain ? d.toolchain.write_in : [])].join(" ").toLowerCase().includes(q);
 function preferredDtype(dev) {
   const withPeak = DTYPE_ORDER.find((t) => dev.dtypes.includes(t) && dev.peak_gflops[t]);
   return withPeak || dev.dtypes[0];
@@ -474,7 +475,13 @@ function deviceView(dev) {
     sec("Used for", h("ul", { class: "plain" }, dev.used_for.map((u) => h("li", { text: u })))),
     sec("Compute", h("dl", { class: "spec" }, spec)),
     sec("Memory and tiling", controls, tiling),
-    sec("Software", h("ul", { class: "tags" }, dev.programming.map((p) => h("li", { text: p })))),
+    sec("How to program it", h("dl", { class: "spec" },
+      h("dt", { text: "Who picks the tile" }), h("dd", {}, h("span", { class: "who who-" + dev.toolchain.who_tiles, text: WHO[dev.toolchain.who_tiles] })),
+      h("dt", { text: "You write" }), h("dd", {}, h("ul", { class: "plain tight" }, dev.toolchain.write_in.map((x) => h("li", { text: x })))),
+      h("dt", { text: "Compiler path" }), h("dd", {}, h("ol", { class: "pipeline", "aria-label": "Compiler path" }, dev.toolchain.lowering.map((x) => h("li", { text: x })))),
+      h("dt", { text: "Skill that matters" }), h("dd", { text: dev.toolchain.skill }),
+      h("dt", { text: "Start here" }), h("dd", { text: dev.toolchain.start_here })),
+      h("h3", { class: "group-title", text: "Ecosystem" }), h("ul", { class: "tags" }, dev.programming.map((p) => h("li", { text: p })))),
     sec("Gotchas", h("ul", { class: "plain" }, dev.gotchas.map((g) => h("li", { text: g })))));
 }
 
@@ -555,8 +562,13 @@ function versusView() {
       { label: "Share of peak", best: "max", cells: fromPlan((p) => (p.pct_peak == null ? none("no peak data") : C("≤ " + Math.round(p.pct_peak) + "%", { num: p.pct_peak }))) },
       { label: "Estimated time", best: "min", cells: fromPlan((p) => (p.t == null ? none() : C(fmtTime(p.t), { num: p.t }))) },
     ] },
-    { title: "Software and use", rows: [
-      { label: "Programmed with", cells: devs.map((d) => list(d.programming)) },
+    { title: "Programming and use", rows: [
+      { label: "Who picks the tile", cells: devs.map((d) => C(WHO[d.toolchain.who_tiles])) },
+      { label: "You write", cells: devs.map((d) => list(d.toolchain.write_in)) },
+      { label: "Compiler path", cells: devs.map((d) => C(d.toolchain.lowering.join(" → "))) },
+      { label: "Skill that matters", cells: devs.map((d) => C(d.toolchain.skill)) },
+      { label: "Start here", cells: devs.map((d) => C(d.toolchain.start_here)) },
+      { label: "Ecosystem", cells: devs.map((d) => list(d.programming)) },
       { label: "Used for", cells: devs.map((d) => list(d.used_for)) },
     ] },
   ];
