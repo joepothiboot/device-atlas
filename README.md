@@ -51,6 +51,12 @@ python3 -m atlas site --out dist          # build web/ + data.json into dist/
 python3 -m http.server -d dist 8000       # then open http://localhost:8000
 ```
 
+Comparing devices: tick the box beside any device in the tree (or press `C` on a focused one, or use
+"Add to comparison" on a device page). The tray at the bottom of the sidebar holds up to four. "Compare
+side by side" opens `#/versus?d=id1,id2,...`, a shareable URL with the problem (`p`), data type (`t`)
+and "only rows that differ" (`diff=1`). Rows where the devices agree are dimmed, and the best value in
+numeric rows (peak, bandwidth, share of peak, time) is marked. The selection persists in localStorage.
+
 It deploys to GitHub Pages from `.github/workflows/pages.yml` on every push to `main`
 (tests, build, deploy, then a check that the live site serves the build). One-time setup:
 repo Settings, Pages, Source: **GitHub Actions**. Expected address:

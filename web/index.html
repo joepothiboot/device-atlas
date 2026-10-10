@@ -30,6 +30,12 @@
     <nav class="tree-wrap" aria-label="Devices by class">
       <ul id="tree" role="tree" aria-label="Devices"></ul>
     </nav>
+    <section id="tray" class="tray" aria-label="Devices to compare">
+      <div class="tray-head"><h2>Compare</h2><span id="tray-count" class="tray-count"></span><button type="button" id="tray-clear" class="tray-clear" hidden>Clear</button></div>
+      <ul id="tray-list" class="tray-list"></ul>
+      <p id="tray-hint" class="tray-hint"></p>
+      <a id="tray-go" class="tray-go" aria-disabled="true">Compare side by side</a>
+    </section>
     <div class="legend" aria-label="Legend">
       <span><svg class="glyph a-cache" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><circle class="g-solid" cx="7" cy="7" r="5.2"/></svg>Hardware caches</span>
       <span><svg class="glyph a-gpu" viewBox="0 0 14 14" width="13" height="13" aria-hidden="true"><polygon class="g-solid" points="7,1.5 13,12 1,12"/></svg>GPU shared memory</span>

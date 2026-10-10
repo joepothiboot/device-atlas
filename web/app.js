@@ -9,7 +9,7 @@ const ARCH = {
 const NS = "http://www.w3.org/2000/svg";
 const DTYPE_ORDER = ["f16", "bf16", "f32", "i8"];
 
-const state = { data: null, devs: [], byId: new Map(), root: null, expanded: new Set(), q: "", route: null, params: new URLSearchParams(), focusId: null, sort: { key: null, dir: 1 } };
+const state = { data: null, devs: [], byId: new Map(), root: null, expanded: new Set(), q: "", route: null, params: new URLSearchParams(), focusId: null, sort: { key: null, dir: 1 }, picks: [], trayMsg: "" };
 
 /* ---------- small helpers ---------- */
 function h(tag, props, ...kids) {
@@ -89,6 +89,74 @@ function preferredDtype(dev) {
 }
 const planFor = (id, preset, dt) => safe(() => state.data.plans[id][preset][dt], null);
 
+/* ---------- selection (compare tray) ---------- */
+const MAX_PICKS = 4;
+const picked = (id) => state.picks.includes(id);
+function loadPicks() {
+  const saved = safe(() => JSON.parse(localStorage.getItem("atlas.picks") || "[]"), []);
+  state.picks = Array.isArray(saved) ? saved.filter((id) => state.byId.has(id)).slice(0, MAX_PICKS) : [];
+}
+const savePicks = () => safe(() => localStorage.setItem("atlas.picks", JSON.stringify(state.picks)), null);
+function announce(msg) { const l = $("#live"); l.textContent = ""; requestAnimationFrame(() => (l.textContent = msg)); }
+function togglePick(id, force) {
+  const on = force ?? !picked(id);
+  const name = state.byId.get(id).name;
+  state.trayMsg = "";
+  if (on && !picked(id)) {
+    if (state.picks.length >= MAX_PICKS) {
+      state.trayMsg = `Up to ${MAX_PICKS} devices. Remove one first.`;
+      announce(state.trayMsg); renderTray(); return false;
+    }
+    state.picks.push(id);
+    announce(`${name} added. ${state.picks.length} selected.`);
+  } else if (!on && picked(id)) {
+    state.picks = state.picks.filter((x) => x !== id);
+    announce(`${name} removed. ${state.picks.length} selected.`);
+  }
+  savePicks(); syncPicks();
+  return true;
+}
+function refreshPickControls() {
+  for (const el of document.querySelectorAll("#view [data-pick]")) {
+    const on = picked(el.dataset.pick);
+    if (el.type === "checkbox") el.checked = on;
+    else { el.setAttribute("aria-pressed", String(on)); if (el.classList.contains("pick-wide")) el.textContent = on ? "Remove from comparison" : "Add to comparison"; }
+  }
+}
+function syncPicks() {
+  if (state.route && state.route.view === "versus") {
+    state.params.set("d", state.picks.join(","));
+    history.replaceState(null, "", hashFor(state.route, state.params));
+  }
+  renderTree(); renderTray();
+  if (state.route && state.route.view === "versus") renderView(); else refreshPickControls();
+}
+function versusHash(ids) {
+  const p = new URLSearchParams();
+  p.set("d", ids.join(","));
+  for (const k of ["p", "t"]) if (state.params.get(k)) p.set(k, state.params.get(k));
+  return hashFor({ view: "versus" }, p);
+}
+function renderTray() {
+  const n = state.picks.length;
+  $("#tray-count").textContent = n ? `${n} of ${MAX_PICKS}` : "";
+  $("#tray-clear").hidden = !n;
+  $("#tray-list").replaceChildren(...state.picks.map((id) => {
+    const d = state.byId.get(id);
+    return h("li", {}, glyph(d.archetype, d.verified), h("a", { class: "tray-name", href: hashFor({ view: "device", id }), text: d.name }),
+      h("button", { type: "button", class: "tray-x", "aria-label": `Remove ${d.name} from comparison`, onclick: () => togglePick(id, false) }, "×"));
+  }));
+  const go = $("#tray-go");
+  if (n >= 2) { go.setAttribute("href", versusHash(state.picks)); go.removeAttribute("aria-disabled"); }
+  else { go.removeAttribute("href"); go.setAttribute("aria-disabled", "true"); }
+  $("#tray-hint").textContent = state.trayMsg || (n === 0 ? "Tick the box beside a device, or press C on a focused one. Pick 2 to 4." : n === 1 ? "Pick at least one more." : "");
+}
+function checkIcon() {
+  const s = svg("svg", { viewBox: "0 0 12 12", width: 12, height: 12, "aria-hidden": "true" });
+  s.append(svg("path", { d: "M2.4 6.3 5 8.8 9.6 3.4", fill: "none", stroke: "currentColor", "stroke-width": 1.9, "stroke-linecap": "round", "stroke-linejoin": "round" }));
+  return s;
+}
+
 /* ---------- routing ---------- */
 function parseRoute() {
   const raw = location.hash.replace(/^#\/?/, "");
@@ -97,10 +165,12 @@ function parseRoute() {
   state.params = new URLSearchParams(query);
   if (parts[0] === "device" && state.byId.has(parts[1])) return { view: "device", id: parts[1] };
   if (parts[0] === "group" && groupIndex.has(parts[1])) return { view: "group", id: parts[1] };
+  if (parts[0] === "versus") return { view: "versus" };
   return { view: "compare" };
 }
 function hashFor(route, params) {
-  const q = params && [...params].length ? "?" + params.toString() : "";
+  const q = params && [...params].length ? "?" + params.toString().replace(/%2C/g, ",") : "";
+  if (route.view === "versus") return `#/versus${q}`;
   if (route.view === "device") return `#/device/${encodeURIComponent(route.id)}${q}`;
   if (route.view === "group") return `#/group/${encodeURIComponent(route.id)}${q}`;
   return `#/compare${q}`;
@@ -126,7 +196,8 @@ function treeItem(entry, level) {
     if (!matches(d, q)) return null;
     const sel = state.route.view === "device" && state.route.id === d.id;
     return h("li", { role: "treeitem", "data-id": d.id, "data-type": "device", "data-arch": ARCH[d.archetype].cls, "aria-level": level + 1, "aria-selected": sel, tabindex: -1 },
-      h("div", { class: "row device", style: `--depth:${level}` }, h("span", { class: "chev-pad" }), glyph(d.archetype, d.verified), h("span", { class: "label", text: d.name })));
+      h("div", { class: "row device", style: `--depth:${level}` }, h("span", { class: "chev-pad" }), glyph(d.archetype, d.verified), h("span", { class: "label", text: d.name }),
+        h("button", { type: "button", class: "pick", tabindex: -1, "aria-pressed": picked(d.id), "aria-label": `Compare ${d.name}`, title: "Add to comparison (C)" }, checkIcon())));
   }
   const n = entry.node;
   const devs = allDevices(n).filter((d) => matches(d, q));
@@ -147,7 +218,7 @@ function renderTree() {
   tree.replaceChildren(...items);
   if (!items.length) tree.append(h("li", { class: "empty-tree", role: "none", text: "No device matches. Try a vendor, a chip name, or a tool like Triton." }));
   const all = [...tree.querySelectorAll('[role="treeitem"]')];
-  const selId = state.route.view !== "compare" ? state.route.id : null;
+  const selId = state.route.view === "device" || state.route.view === "group" ? state.route.id : null;
   const focusEl = all.find((el) => el.dataset.id === state.focusId) || all.find((el) => el.dataset.id === selId) || all[0];
   if (focusEl) { focusEl.tabIndex = 0; if (hadFocus) focusEl.focus({ preventScroll: true }); }
   const link = $("#compare-link");
@@ -170,6 +241,7 @@ function activate(li) {
 function onTreeClick(e) {
   const li = e.target.closest('[role="treeitem"]');
   if (!li || !e.target.closest(".row")) return;
+  if (e.target.closest(".pick")) { state.focusId = li.dataset.id; togglePick(li.dataset.id); return; }
   if (e.target.closest(".chev")) { toggle(li.dataset.id); return; }
   if (li.dataset.type === "group" && state.route.view === "group" && state.route.id === li.dataset.id) { toggle(li.dataset.id); return; }
   activate(li);
@@ -191,6 +263,8 @@ function onTreeKey(e) {
     ArrowLeft: () => { if (isGroup && open && !state.q) toggle(li.dataset.id, false); else focusAt(li.parentElement.closest('[role="treeitem"]')); },
     Enter: () => activate(li),
     " ": () => activate(li),
+    c: () => { if (!isGroup) { state.focusId = li.dataset.id; togglePick(li.dataset.id); } },
+    C: () => { if (!isGroup) { state.focusId = li.dataset.id; togglePick(li.dataset.id); } },
   };
   if (keys[e.key]) { e.preventDefault(); keys[e.key](); }
 }
@@ -243,11 +317,12 @@ function compareView() {
   ];
   const sort = state.sort;
   if (sort.key) { const c = cols.find((x) => x[0] === sort.key); rows.sort((a, b) => { const x = c[2](a), y = c[2](b); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; }); }
-  const head = h("tr", {}, cols.map(([key, label, , num]) =>
+  const head = h("tr", {}, h("th", { scope: "col" }, h("span", { class: "sr", text: "Compare" })), cols.map(([key, label, , num]) =>
     h("th", { class: num ? "num" : "", scope: "col", "aria-sort": sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : null },
       h("button", { type: "button", onclick: () => { state.sort = { key, dir: sort.key === key ? -sort.dir : (num ? -1 : 1) }; renderView(); } }, label))));
   const body = rows.map(({ d, p, waste, pct }) =>
     h("tr", {},
+      h("td", { class: "pickcell" }, h("input", { type: "checkbox", "data-pick": d.id, checked: picked(d.id), "aria-label": `Compare ${d.name}`, onchange: (e) => { if (!togglePick(d.id, e.target.checked)) e.target.checked = false; } })),
       h("td", {}, h("span", { class: "devcell" }, glyph(d.archetype, d.verified), h("a", { href: hashFor({ view: "device", id: d.id }, new URLSearchParams({ p: preset.id, t: dt })), text: d.name }))),
       h("td", { text: d.segment }), h("td", {}, h("span", { class: "mono", text: p.outer })), h("td", { text: p.inner }), h("td", { text: shortRes(p.resident) }),
       h("td", { class: "num", text: waste < 0.5 ? "none" : Math.round(waste) + "%" }),
@@ -392,6 +467,9 @@ function deviceView(dev) {
     h("h1", { class: "title", text: dev.name }),
     h("p", { class: "meta" }, h("span", { text: dev.vendor }), h("span", { text: dev.segment }), h("span", { class: "mono", text: dev.id })),
     h("div", { class: "arch" }, glyph(dev.archetype, dev.verified, 16), h("p", {}, h("strong", { text: a.short + ". " }), `Here, a tile is ${a.tile}.`)),
+    h("div", { class: "actions" },
+      h("button", { type: "button", class: "btn pick-wide", "data-pick": dev.id, "aria-pressed": picked(dev.id), onclick: () => togglePick(dev.id), text: picked(dev.id) ? "Remove from comparison" : "Add to comparison" }),
+      h("a", { class: "linkish", href: versusHash(state.picks.length ? state.picks : [dev.id]), hidden: state.picks.length < 2, text: "Open comparison" })),
     dev.verified ? null : h("p", { class: "note" }, glyph(dev.archetype, false), h("span", {}, "These numbers have not been checked against vendor documents yet. Check: ", dev.sources_to_check.join("; "), ".")),
     sec("Used for", h("ul", { class: "plain" }, dev.used_for.map((u) => h("li", { text: u })))),
     sec("Compute", h("dl", { class: "spec" }, spec)),
@@ -400,19 +478,153 @@ function deviceView(dev) {
     sec("Gotchas", h("ul", { class: "plain" }, dev.gotchas.map((g) => h("li", { text: g })))));
 }
 
+/* versus: side by side */
+const ROLE_LABEL = { regs: "Registers", l1: "L1 cache", l2: "L2 cache", l3: "L3 cache", smem: "Shared memory", spm: "Scratchpad", ub: "Unified buffer", l2mem: "On-chip L2 memory" };
+const ROLE_ORDER = ["regs", "l1", "smem", "spm", "ub", "l2", "l2mem", "l3"];
+const EXAMPLES = [
+  ["Three ways to move data", "A CPU with hardware caches, a GPU with shared memory, and a TPU with a scratchpad", ["x86-sapphire-rapids-amx", "nvidia-h100", "google-tpu-v5e"]],
+  ["Two generations of one GPU", "What changed between the A100 and the H100", ["nvidia-a100", "nvidia-h100"]],
+  ["A phone DSP and the mock chip", "Hexagon with a matrix unit against the MN1 you can run in this repo", ["hexagon-v73-hmx", "mn1-mock"]],
+];
+const peakText = (dev, dt) => {
+  const g = dev.peak_gflops[dt];
+  return g ? (g < 1000 ? `${g} ${unitOf(dt).replace("T", "G")}` : `${fmtNum(g / 1000)} ${unitOf(dt)}`) : null;
+};
+function versusEmpty(adder) {
+  const ex = EXAMPLES.filter(([, , ids]) => ids.every((id) => state.byId.has(id)));
+  return h("div", {},
+    h("p", { class: "lead", text: state.picks.length ? "One device is picked. Add at least one more to compare." : "Pick two to four devices to see them side by side, with the rows that differ pulled forward." }),
+    h("div", { style: "height:18px" }), h("div", { class: "controls" }, adder),
+    h("h2", { class: "group-title", text: "Or start from an example" }),
+    h("div", { class: "cards" }, ex.map(([t, s, ids]) => h("a", { class: "item", href: versusHash(ids), onclick: () => { state.picks = []; } },
+      h("span", { class: "item-name" }, h("span", { class: "item-name-text", text: t })), h("span", { class: "item-facts", text: s })))));
+}
+function versusView() {
+  const preset = currentPreset();
+  const devs = state.picks.map((id) => state.byId.get(id));
+  const full = devs.length >= MAX_PICKS;
+  const adder = h("label", { class: "field" }, "Add a device",
+    h("select", { id: "adder", disabled: full, onchange: (e) => { if (e.target.value) togglePick(e.target.value, true); } },
+      h("option", { value: "", text: full ? `Limit of ${MAX_PICKS} reached` : "Choose a device" }),
+      state.devs.filter((d) => !picked(d.id)).map((d) => h("option", { value: d.id, text: d.name }))));
+  const head = [h("nav", { class: "crumbs", "aria-label": "Breadcrumb" }, h("a", { href: "#/compare", text: "All devices" }), h("span", { class: "sep", "aria-hidden": "true", text: "/" }), h("span", { text: "Side by side" })),
+    h("h1", { class: "title", text: "Side by side" })];
+  if (devs.length < 2) return h("div", {}, head, versusEmpty(adder));
+
+  const union = DTYPE_ORDER.filter((t) => devs.some((d) => d.dtypes.includes(t)));
+  const common = DTYPE_ORDER.filter((t) => devs.every((d) => d.dtypes.includes(t)));
+  const dt = union.includes(state.params.get("t")) ? state.params.get("t") : (common[0] || union[0]);
+  const plans = devs.map((d) => planFor(d.id, preset.id, dt));
+  const C = (text, o = {}) => ({ text, key: o.key ?? String(text), num: o.num ?? null, node: o.node, muted: !!o.muted });
+  const none = (t = "none") => C(t, { muted: true });
+  const list = (arr) => C(arr.join(", "), { node: h("ul", { class: "cell-list" }, arr.map((x) => h("li", { text: x }))) });
+  const fromPlan = (fn) => plans.map((p, i) => (p ? fn(p, devs[i]) : none(`no native ${dt} path`)));
+
+  const roles = ROLE_ORDER.concat([...new Set(devs.flatMap((d) => d.memory.map((m) => m.role)))].filter((r) => !ROLE_ORDER.includes(r))).filter((r) => devs.some((d) => d.memory.some((m) => m.role === r)));
+  const groups = [
+    { title: "Basics", rows: [
+      { label: "Vendor", cells: devs.map((d) => C(d.vendor)) },
+      { label: "Used in", cells: devs.map((d) => C(d.segment)) },
+      { label: "Who moves the data", cells: devs.map((d) => C(state.data.archetypes[d.archetype].short)) },
+      { label: "Numbers checked", cells: devs.map((d) => C(d.verified ? "yes" : "not yet")) },
+    ] },
+    { title: "Compute", rows: [
+      { label: "Compute units", cells: devs.map((d) => C(`${d.units.count} ${d.units.name}${d.units.count > 1 ? "s" : ""}`)) },
+      { label: "Vector unit", cells: devs.map((d) => (d.vector ? C(`${d.vector.bits}-bit`) : none())) },
+      { label: "Matrix unit", cells: devs.map((d) => (d.matrix_unit ? C(`${d.matrix_unit.name} ${d.matrix_unit.m}x${d.matrix_unit.n}x${d.matrix_unit.k}`) : none())) },
+      { label: "Data types", cells: devs.map((d) => C(d.dtypes.join(", "))) },
+      { label: `Peak ${dt}`, best: "max", cells: devs.map((d) => (peakText(d, dt) ? C(peakText(d, dt), { num: d.peak_gflops[dt] }) : none(d.dtypes.includes(dt) ? "not recorded" : "no native path"))) },
+    ] },
+    { title: "Memory", rows: [
+      ...roles.map((r) => ({ label: ROLE_LABEL[r] || r, cells: devs.map((d) => {
+        const m = d.memory.find((x) => x.role === r);
+        if (!m) return none();
+        const scope = m.scope === "shared" ? "shared" : "per " + d.units.name;
+        return C(`${fmtBytes(m.kb * 1024)} ${scope}`, { node: h("span", {}, fmtBytes(m.kb * 1024), " ", h("small", { class: "dim", text: scope })) });
+      }) })),
+      { label: "DRAM", cells: devs.map((d) => C(`${d.dram.name}${d.dram.gb ? ", " + d.dram.gb + " GB" : ""}`)) },
+      { label: "DRAM bandwidth", best: "max", cells: devs.map((d) => (d.dram.gbps ? C(`${d.dram.gbps} GB/s`, { num: d.dram.gbps }) : none("not recorded"))) },
+    ] },
+    { title: `Tiling ${preset.label}, ${dt}`, rows: [
+      { label: "Outer tile", cells: fromPlan((p) => C(p.outer.replace(/x/g, " × "), { node: h("span", { class: "mono", text: p.outer.replace(/x/g, " × ") }) })) },
+      { label: "Inner unit", cells: fromPlan((p) => C(p.inner)) },
+      { label: "Tile lives in", cells: fromPlan((p) => C(shortRes(p.resident))) },
+      { label: "Padding waste", best: "min", cells: fromPlan((p) => { const w = 100 * (1 - p.flops / p.flops_padded); return C(w < 0.5 ? "none" : Math.round(w) + "%", { num: w < 0.5 ? 0 : Math.round(w) }); }) },
+      { label: "FLOP per byte", cells: fromPlan((p) => C(fmtNum(p.ai) + (p.balance ? " vs " + fmtNum(p.balance) : ""))) },
+      { label: "Bound by", cells: fromPlan((p) => C(p.bound === "n/a" ? "unknown" : p.bound)) },
+      { label: "Share of peak", best: "max", cells: fromPlan((p) => (p.pct_peak == null ? none("no peak data") : C("≤ " + Math.round(p.pct_peak) + "%", { num: p.pct_peak }))) },
+      { label: "Estimated time", best: "min", cells: fromPlan((p) => (p.t == null ? none() : C(fmtTime(p.t), { num: p.t }))) },
+    ] },
+    { title: "Software and use", rows: [
+      { label: "Programmed with", cells: devs.map((d) => list(d.programming)) },
+      { label: "Used for", cells: devs.map((d) => list(d.used_for)) },
+    ] },
+  ];
+  for (const g of groups) for (const r of g.rows) {
+    r.same = new Set(r.cells.map((c) => c.key)).size === 1;
+    if (r.best && !r.same) {
+      const nums = r.cells.map((c) => c.num).filter((x) => x != null);
+      if (nums.length > 1) { const target = r.best === "max" ? Math.max(...nums) : Math.min(...nums); r.cells.forEach((c) => { c.best = c.num === target; }); }
+    }
+  }
+  const onlyDiff = state.params.get("diff") === "1";
+  const total = groups.reduce((n, g) => n + g.rows.length, 0), differ = groups.reduce((n, g) => n + g.rows.filter((r) => !r.same).length, 0);
+
+  const colHead = devs.map((d) => h("th", { scope: "col", class: "vhead" },
+    h("div", { class: "vname" }, glyph(d.archetype, d.verified), h("a", { href: hashFor({ view: "device", id: d.id }, new URLSearchParams({ p: preset.id, t: dt })), text: d.name })),
+    h("button", { type: "button", class: "vx", "aria-label": `Remove ${d.name}`, onclick: () => togglePick(d.id, false) }, "Remove")));
+  const bodies = groups.map((g) => {
+    const rows = g.rows.filter((r) => !(onlyDiff && r.same));
+    if (!rows.length) return null;
+    return h("tbody", {},
+      h("tr", { class: "vgroup" }, h("th", { colspan: devs.length + 1, scope: "colgroup", text: g.title })),
+      rows.map((r) => h("tr", { class: r.same ? "same" : "differs" },
+        h("th", { scope: "row", text: r.label }),
+        r.cells.map((c) => h("td", { class: (c.muted ? "muted " : "") + (c.best ? "best" : "") }, c.node || c.text, c.best ? h("span", { class: "sr", text: r.best === "max" ? " (highest)" : " (lowest)" }) : null)))));
+  });
+  return h("div", {}, head,
+    h("p", { class: "lead", text: `${devs.length} devices, one problem: ${preset.label}. Rows where the devices agree are dimmed.` }),
+    h("div", { style: "height:22px" }),
+    h("div", { class: "controls" },
+      select("Problem", "preset", presetOptions(), preset.id, (v) => setParam("p", v)),
+      select("Data type", "dtype", union.map((t) => [t, dtLabel(t)]), dt, (v) => setParam("t", v)),
+      adder,
+      h("label", { class: "check" }, h("input", { type: "checkbox", id: "diff", checked: onlyDiff, onchange: (e) => setParam("diff", e.target.checked ? "1" : "0") }), "Only rows that differ")),
+    h("p", { class: "muted", text: `${differ} of ${total} rows differ.` + (common.includes(dt) ? "" : ` Not every device has a native ${dt} path.`) }),
+    h("div", { class: "tbl-wrap" }, h("table", { class: "versus" }, h("caption", { class: "sr", text: `Side by side: ${devs.map((d) => d.name).join(", ")}` }),
+      h("thead", {}, h("tr", {}, h("td", { class: "corner" }), colHead)), bodies)),
+    h("p", { class: "caveat", text: "Estimates are upper bounds from a teaching model. Device numbers come from public knowledge and are not yet verified. Hollow shapes mark unverified entries." }));
+}
+
 function renderView() {
   const view = $("#view");
   let el, title;
   const r = state.route;
+  const ae = view.contains(document.activeElement) ? document.activeElement : null;
+  const refocus = ae ? (ae.id ? "#" + ae.id : ae.dataset.pick ? `[data-pick="${ae.dataset.pick}"]` : null) : null;
   if (r.view === "device") { const d = state.byId.get(r.id); el = deviceView(d); title = d.name; }
   else if (r.view === "group") { const g = groupIndex.get(r.id); el = groupView(g); title = g.label; }
+  else if (r.view === "versus") { el = versusView(); title = "Side by side"; }
   else { el = compareView(); title = "Compare all devices"; }
   view.replaceChildren(el);
+  if (refocus) safe(() => $(refocus, view)?.focus({ preventScroll: true }), null);
   document.title = title + " | Device atlas";
-  $("#live").textContent = title;
+  if (!ae) $("#live").textContent = title;
 }
 function onRoute() {
   state.route = parseRoute();
+  if (state.route.view === "versus") {
+    if (state.params.has("d")) {
+      state.picks = [...new Set(state.params.get("d").split(",").filter((id) => state.byId.has(id)))].slice(0, MAX_PICKS);
+      savePicks();
+    } else if (state.picks.length) {
+      state.params.set("d", state.picks.join(","));
+      history.replaceState(null, "", hashFor(state.route, state.params));
+    }
+  }
+  closeDrawer();
+  state.trayMsg = "";
+  renderTray();
   renderTree();
   renderView();
   $("#main").scrollTo({ top: 0 });
@@ -434,7 +646,8 @@ async function boot() {
   }
   state.data = data; state.devs = data.devices;
   data.devices.forEach((d) => state.byId.set(d.id, d));
-  state.root = buildTree(data.devices); indexGroups(state.root); loadExpanded();
+  state.root = buildTree(data.devices); indexGroups(state.root); loadExpanded(); loadPicks();
+  $("#tray-clear").addEventListener("click", () => { state.picks = []; state.trayMsg = ""; savePicks(); announce("Selection cleared."); syncPicks(); });
   $("#tree").addEventListener("click", onTreeClick);
   $("#tree").addEventListener("keydown", onTreeKey);
   $("#q").addEventListener("input", (e) => { state.q = e.target.value.trim().toLowerCase(); renderTree(); });

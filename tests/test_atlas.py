@@ -175,6 +175,20 @@ class Web(unittest.TestCase):
             self.assertIn(ref, html)
             self.assertTrue(os.path.exists(os.path.join(self.WEB, ref)), ref)
 
+    def test_every_element_id_app_js_uses_exists_in_index(self):
+        import re
+        html, js = self.read("index.html"), self.read("app.js")
+        used = set(re.findall(r'\$\("#([A-Za-z][\w-]*)"\)', js))
+        # ids created by app.js itself (inside views) are not in index.html
+        dynamic = {"adder", "diff", "preset", "dtype"}
+        for i in used - dynamic:
+            self.assertIn(f'id="{i}"', html, f"app.js looks up #{i} but index.html has no such id")
+
+    def test_versus_route_and_cap_exist(self):
+        js = self.read("app.js")
+        for needle in ("MAX_PICKS = 4", '"versus"', "atlas.picks"):
+            self.assertIn(needle, js)
+
     def test_no_root_absolute_paths(self):
         html, js = self.read("index.html"), self.read("app.js")
         for needle in ('href="/', 'src="/', "fetch(\"/"):
