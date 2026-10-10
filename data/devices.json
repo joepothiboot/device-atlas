@@ -95,6 +95,17 @@
         "who_tiles": "you",
         "start_here": "Write a 6x16 register micro-kernel with intrinsics, then add L1/L2 blocking and packing around it.",
         "skill": "Cache blocking, register tiling, vector shuffles"
+      },
+      "adoption": {
+        "score": 2,
+        "used_by": [
+          "Everywhere as host CPUs"
+        ],
+        "note": "Present in every server, but rarely the accelerator for AI work."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "MAX targets CPUs generally. Confirm the exact ISA support."
       }
     },
     {
@@ -199,6 +210,18 @@
         "who_tiles": "you",
         "start_here": "Use oneDNN first. Then write one 16x16 tile-register kernel by hand to see palette and tile-config setup.",
         "skill": "Tile registers, VNNI data layout, AMX state setup"
+      },
+      "adoption": {
+        "score": 3,
+        "used_by": [
+          "Cloud providers",
+          "Recommendation and data-pipeline teams"
+        ],
+        "note": "Common for small-model inference and preprocessing next to GPUs."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "MAX targets CPUs generally. Confirm AMX use."
       }
     },
     {
@@ -290,6 +313,17 @@
         "who_tiles": "you",
         "start_here": "Port the x86 micro-kernel to NEON (4x4 or 8x8 f32), then compare register pressure.",
         "skill": "Register tiling with fewer vector registers"
+      },
+      "adoption": {
+        "score": 2,
+        "used_by": [
+          "Phone makers"
+        ],
+        "note": "The CPU side of on-device AI."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "MAX targets CPUs generally. Confirm Arm support."
       }
     },
     {
@@ -394,6 +428,18 @@
         "who_tiles": "you",
         "start_here": "Write a CUDA shared-memory tiled GEMM, then the same in Triton, then read what CUTLASS picks.",
         "skill": "Shared-memory tiles, cp.async pipelines, mma fragments, occupancy"
+      },
+      "adoption": {
+        "score": 4,
+        "used_by": [
+          "Most hyperscalers",
+          "Many labs"
+        ],
+        "note": "The previous generation, still widely deployed for training and inference."
+      },
+      "modular": {
+        "status": "yes",
+        "note": "NVIDIA GPUs are a named MAX target."
       }
     },
     {
@@ -497,6 +543,21 @@
         "who_tiles": "you",
         "start_here": "Start from a Triton GEMM on H100, then read how CuTe expresses TMA and warpgroup MMA.",
         "skill": "TMA descriptors, warpgroup MMA, thread block clusters"
+      },
+      "adoption": {
+        "score": 5,
+        "used_by": [
+          "OpenAI",
+          "Meta",
+          "Microsoft",
+          "xAI",
+          "most hyperscalers"
+        ],
+        "note": "The default training and serving GPU of the current generation."
+      },
+      "modular": {
+        "status": "yes",
+        "note": "NVIDIA GPUs are a named MAX target."
       }
     },
     {
@@ -597,6 +658,17 @@
         "who_tiles": "library",
         "start_here": "Build the model through TensorRT, profile it, and only write CUDA for the ops it fuses badly.",
         "skill": "Power and memory limits on a shared-memory SoC"
+      },
+      "adoption": {
+        "score": 2,
+        "used_by": [
+          "Robotics and automotive teams"
+        ],
+        "note": "Standard edge GPU module for robots and vehicles."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "NVIDIA GPU, but embedded boards are not named on the MAX page."
       }
     },
     {
@@ -698,6 +770,19 @@
         "who_tiles": "you",
         "start_here": "Hipify a CUDA tiled GEMM, then retune for wave64 and MFMA shapes.",
         "skill": "Wave64, MFMA instructions, LDS bank conflicts"
+      },
+      "adoption": {
+        "score": 3,
+        "used_by": [
+          "Microsoft",
+          "Meta",
+          "Oracle"
+        ],
+        "note": "The main GPU alternative to NVIDIA in datacenters, with a smaller software ecosystem."
+      },
+      "modular": {
+        "status": "yes",
+        "note": "AMD GPUs are a named MAX target."
       }
     },
     {
@@ -787,6 +872,17 @@
         "who_tiles": "you",
         "start_here": "Write a vector add and a dot product with HVX intrinsics, aligned to 128 bytes, and check the packet schedule.",
         "skill": "Wide aligned vectors, VLIW packing, DMA into VTCM"
+      },
+      "adoption": {
+        "score": 2,
+        "used_by": [
+          "Qualcomm phone partners"
+        ],
+        "note": "Older phones, vector-only DSP."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "Modular has posted about running on Qualcomm silicon. Scope not confirmed."
       }
     },
     {
@@ -883,6 +979,17 @@
         "who_tiles": "library",
         "start_here": "Use QNN and read the generated graph. HMX is hard to reach directly, so study the tile layout it expects.",
         "skill": "Tile layout for the matrix unit, VTCM budgeting, DMA overlap"
+      },
+      "adoption": {
+        "score": 3,
+        "used_by": [
+          "Qualcomm phone and PC partners"
+        ],
+        "note": "Ships in a very large number of phones, used for on-device models."
+      },
+      "modular": {
+        "status": "partial",
+        "note": "Modular has posted about running on Qualcomm silicon. Scope not confirmed."
       }
     },
     {
@@ -986,6 +1093,18 @@
         "who_tiles": "you",
         "start_here": "Write one Ascend C operator with an explicit tiling function and copy-in, compute, copy-out stages.",
         "skill": "Explicit unified-buffer tiling, pipeline stages, cube/vector split"
+      },
+      "adoption": {
+        "score": 3,
+        "used_by": [
+          "Baidu",
+          "Chinese cloud and AI firms"
+        ],
+        "note": "Large in China, little used elsewhere."
+      },
+      "modular": {
+        "status": "none",
+        "note": "No Modular support known."
       }
     },
     {
@@ -1079,6 +1198,17 @@
         "who_tiles": "you",
         "start_here": "Map a small GEMM across a few AIE tiles with MLIR-AIE and watch the data-movement code it generates.",
         "skill": "Spatial placement, tile-to-tile streaming, local memory limits"
+      },
+      "adoption": {
+        "score": 1,
+        "used_by": [
+          "FPGA and edge teams"
+        ],
+        "note": "Specialised, with a steep tooling curve."
+      },
+      "modular": {
+        "status": "none",
+        "note": "No Modular support known."
       }
     },
     {
@@ -1157,6 +1287,17 @@
         "who_tiles": "compiler",
         "start_here": "Run a quantized model through Vela and read its report: it picks the tiling and SRAM use for you.",
         "skill": "Quantization and reading the compiler's memory report"
+      },
+      "adoption": {
+        "score": 1,
+        "used_by": [
+          "Microcontroller product teams"
+        ],
+        "note": "Tiny always-on inference, not a frontier-lab target."
+      },
+      "modular": {
+        "status": "none",
+        "note": "No Modular support known."
       }
     },
     {
@@ -1244,6 +1385,19 @@
         "who_tiles": "compiler",
         "start_here": "Write the matmul in JAX, inspect the HLO, and only reach for Pallas when XLA's tiling is not enough.",
         "skill": "Reading HLO, sharding, Pallas block specs"
+      },
+      "adoption": {
+        "score": 4,
+        "used_by": [
+          "Google",
+          "Anthropic",
+          "Apple"
+        ],
+        "note": "Google's own models run on TPUs, and some outside labs have announced TPU use. Cloud-only."
+      },
+      "modular": {
+        "status": "none",
+        "note": "No Modular support known."
       }
     },
     {
@@ -1316,6 +1470,17 @@
         "who_tiles": "you",
         "start_here": "Run tools/gen_matmul.py, look at the trace in Perfetto, then change the tile and watch the DMA overlap.",
         "skill": "Double buffering and DMA tags on a 64 KiB scratchpad"
+      },
+      "adoption": {
+        "score": 0,
+        "used_by": [
+          "Nobody. It is this repo's teaching simulator"
+        ],
+        "note": "Exists so you can run and trace a scratchpad machine."
+      },
+      "modular": {
+        "status": "none",
+        "note": "No Modular support known."
       }
     }
   ]

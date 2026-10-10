@@ -297,6 +297,14 @@ table.versus { min-width: 520px; table-layout: fixed; }
 
 ul.tight { margin: 0; }
 
+.order { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--side-muted); font-size: 13px; }
+.order select { flex: 1; min-width: 0; background-color: var(--side-hover); color: var(--side-ink); border: 1px solid var(--side-line); padding: 5px 28px 5px 8px; font-size: 13px; }
+.dots { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--muted); box-sizing: border-box; }
+.dots i.on { background: var(--ink); border-color: var(--ink); }
+.dots-label { margin-left: 7px; font-size: 13.5px; color: var(--muted); }
+td.num .dots-label { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

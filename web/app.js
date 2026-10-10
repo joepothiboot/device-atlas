@@ -9,7 +9,7 @@ const ARCH = {
 const NS = "http://www.w3.org/2000/svg";
 const DTYPE_ORDER = ["f16", "bf16", "f32", "i8"];
 
-const state = { data: null, devs: [], byId: new Map(), root: null, expanded: new Set(), q: "", route: null, params: new URLSearchParams(), focusId: null, sort: { key: null, dir: 1 }, picks: [], trayMsg: "" };
+const state = { data: null, devs: [], byId: new Map(), root: null, expanded: new Set(), q: "", route: null, params: new URLSearchParams(), focusId: null, sort: { key: null, dir: 1 }, picks: [], trayMsg: "", order: "catalog" };
 
 /* ---------- small helpers ---------- */
 function h(tag, props, ...kids) {
@@ -80,7 +80,16 @@ function kids(node) {
     else out.push({ type: "group", node: c });
   }
   for (const d of node.devices) out.push({ type: "device", dev: d });
-  return out;
+  return ordered(out, (e) => (e.type === "device" ? e.dev.adoption.score : groupScore(e.node)));
+}
+const ADOPT_LABEL = ["Teaching only", "Rare", "Specialised", "Significant or regional", "Widely used", "Industry standard"];
+const MODULAR = { yes: "Supported", partial: "Partly or unconfirmed", none: "None known" };
+const byAdoption = () => state.order === "adoption";
+const groupScore = (node) => Math.max(...allDevices(node).map((d) => d.adoption.score));
+function ordered(list, score) { return byAdoption() ? list.map((x, i) => [x, i]).sort((a, b) => score(b[0]) - score(a[0]) || a[1] - b[1]).map((p) => p[0]) : list; }
+function dots(score) {
+  return h("span", { class: "dots", role: "img", "aria-label": `${ADOPT_LABEL[score]}, ${score} of 5` },
+    [1, 2, 3, 4, 5].map((i) => h("i", { class: i <= score ? "on" : "" })), h("span", { class: "dots-label", text: ADOPT_LABEL[score] }));
 }
 const WHO = { you: "You do", compiler: "The compiler does", library: "A library does" };
 const matches = (d, q) => !q || [d.name, d.id, d.vendor, d.segment, ...d.path, ...(d.programming || []), ...(d.used_for || []), ...(d.toolchain ? d.toolchain.write_in : [])].join(" ").toLowerCase().includes(q);
@@ -315,8 +324,9 @@ function compareView() {
     ["dev", "Device", (r) => r.d.name, false], ["seg", "Used in", (r) => r.d.segment, false], ["outer", "Outer tile", (r) => r.p.outer, false], ["inner", "Inner unit", (r) => r.p.inner, false],
     ["res", "Tile lives in", (r) => r.p.resident, false], ["waste", "Padding", (r) => r.waste, true], ["ai", "FLOP per byte", (r) => r.p.ai, true],
     ["bound", "Bound by", (r) => r.p.bound, false], ["pct", "Share of peak", (r) => r.pct ?? -1, true],
+    ["adopt", "AI adoption", (r) => r.d.adoption.score, true],
   ];
-  const sort = state.sort;
+  const sort = state.sort.key ? state.sort : byAdoption() ? { key: "adopt", dir: -1 } : state.sort;
   if (sort.key) { const c = cols.find((x) => x[0] === sort.key); rows.sort((a, b) => { const x = c[2](a), y = c[2](b); return (x < y ? -1 : x > y ? 1 : 0) * sort.dir; }); }
   const head = h("tr", {}, h("th", { scope: "col" }, h("span", { class: "sr", text: "Compare" })), cols.map(([key, label, , num]) =>
     h("th", { class: num ? "num" : "", scope: "col", "aria-sort": sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : null },
@@ -330,7 +340,8 @@ function compareView() {
       h("td", { class: "num", text: fmtNum(p.ai) + (p.balance ? " vs " + fmtNum(p.balance) : "") }),
       h("td", { text: p.bound === "n/a" ? "unknown" : p.bound }),
       h("td", { class: "num" }, pct == null ? h("span", { class: "muted", text: "no peak data" }) :
-        h("span", { class: "meter", style: `--accent:var(--c-${ARCH[d.archetype].cls});--w:${Math.min(100, pct)}%` }, h("i"), "≤ " + Math.round(pct) + "%"))));
+        h("span", { class: "meter", style: `--accent:var(--c-${ARCH[d.archetype].cls});--w:${Math.min(100, pct)}%` }, h("i"), "≤ " + Math.round(pct) + "%")),
+      h("td", { class: "num" }, dots(d.adoption.score))));
   return h("div", {},
     h("div", { class: "crumbs", "aria-hidden": "true" }, " "),
     h("h1", { class: "title", text: "Same matrix multiply, different machines" }),
@@ -355,8 +366,8 @@ function groupView(node) {
   while (p && p.level >= 0) { chain.unshift(p); p = p.parent; }
   chain.forEach((c) => crumbItems.push(h("span", { class: "sep", "aria-hidden": "true", text: "/" }), h("a", { href: hashFor({ view: "group", id: c.id }), text: c.label })));
   const sections = [];
-  const children = [...node.children.values()];
-  const renderList = (list) => h("div", { class: "cards" }, list.map((d) => deviceRow(d)));
+  const children = ordered([...node.children.values()], groupScore);
+  const renderList = (list) => h("div", { class: "cards" }, ordered(list, (d) => d.adoption.score).map((d) => deviceRow(d)));
   if (children.length && !(node.level === 1 && false)) {
     for (const c of children) sections.push(h("div", {}, h("h2", { class: "group-title" }, h("a", { href: hashFor({ view: "group", id: c.id }), text: c.label, style: "text-underline-offset:3px" })),
       state.data.group_notes[c.label] ? h("p", { class: "muted", style: "margin:4px 0 0;max-width:68ch", text: state.data.group_notes[c.label] }) : null, renderList(allDevices(c))));
@@ -473,6 +484,12 @@ function deviceView(dev) {
       h("a", { class: "linkish", href: versusHash(state.picks.length ? state.picks : [dev.id]), hidden: state.picks.length < 2, text: "Open comparison" })),
     dev.verified ? null : h("p", { class: "note" }, glyph(dev.archetype, false), h("span", {}, "These numbers have not been checked against vendor documents yet. Check: ", dev.sources_to_check.join("; "), ".")),
     sec("Used for", h("ul", { class: "plain" }, dev.used_for.map((u) => h("li", { text: u })))),
+    sec("Adoption", h("dl", { class: "spec" },
+      h("dt", { text: "In AI work" }), h("dd", {}, dots(dev.adoption.score)),
+      h("dt", { text: "Used by" }), h("dd", { text: dev.adoption.used_by.join(", ") }),
+      h("dt", { text: "In short" }), h("dd", { text: dev.adoption.note }),
+      h("dt", { text: "Modular MAX" }), h("dd", {}, h("strong", { text: MODULAR[dev.modular.status] }), " ", h("span", { class: "muted", text: dev.modular.note }))),
+      h("p", { class: "caveat", text: "An editorial estimate from public knowledge, not a measurement. Check each claim before quoting it." })),
     sec("Compute", h("dl", { class: "spec" }, spec)),
     sec("Memory and tiling", controls, tiling),
     sec("How to program it", h("dl", { class: "spec" },
@@ -561,6 +578,11 @@ function versusView() {
       { label: "Bound by", cells: fromPlan((p) => C(p.bound === "n/a" ? "unknown" : p.bound)) },
       { label: "Share of peak", best: "max", cells: fromPlan((p) => (p.pct_peak == null ? none("no peak data") : C("≤ " + Math.round(p.pct_peak) + "%", { num: p.pct_peak }))) },
       { label: "Estimated time", best: "min", cells: fromPlan((p) => (p.t == null ? none() : C(fmtTime(p.t), { num: p.t }))) },
+    ] },
+    { title: "Adoption", rows: [
+      { label: "AI adoption", best: "max", cells: devs.map((d) => C(`${d.adoption.score} of 5, ${ADOPT_LABEL[d.adoption.score]}`, { num: d.adoption.score, node: dots(d.adoption.score) })) },
+      { label: "Used by", cells: devs.map((d) => list(d.adoption.used_by)) },
+      { label: "Modular MAX", cells: devs.map((d) => C(MODULAR[d.modular.status])) },
     ] },
     { title: "Programming and use", rows: [
       { label: "Who picks the tile", cells: devs.map((d) => C(WHO[d.toolchain.who_tiles])) },
@@ -659,6 +681,9 @@ async function boot() {
   state.data = data; state.devs = data.devices;
   data.devices.forEach((d) => state.byId.set(d.id, d));
   state.root = buildTree(data.devices); indexGroups(state.root); loadExpanded(); loadPicks();
+  state.order = safe(() => localStorage.getItem("atlas.order"), null) === "adoption" ? "adoption" : "catalog";
+  $("#order").value = state.order;
+  $("#order").addEventListener("change", (e) => { state.order = e.target.value; safe(() => localStorage.setItem("atlas.order", state.order), null); renderTree(); renderView(); });
   $("#tray-clear").addEventListener("click", () => { state.picks = []; state.trayMsg = ""; savePicks(); announce("Selection cleared."); syncPicks(); });
   $("#tree").addEventListener("click", onTreeClick);
   $("#tree").addEventListener("keydown", onTreeKey);

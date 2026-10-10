@@ -44,6 +44,13 @@ def validate(dev):
             errs.append(f"toolchain.{key} is required")
     if tc.get("who_tiles") not in (None, "you", "compiler", "library"):
         errs.append("toolchain.who_tiles must be you, compiler or library")
+    ad = dev.get("adoption") or {}
+    if not isinstance(ad.get("score"), int) or not 0 <= ad["score"] <= 5:
+        errs.append("adoption.score must be an integer 0 to 5")
+    if not ad.get("used_by") or not ad.get("note"):
+        errs.append("adoption needs used_by and note")
+    if (dev.get("modular") or {}).get("status") not in ("yes", "partial", "none"):
+        errs.append("modular.status must be yes, partial or none")
     if not dev.get("used_for"):
         errs.append("used_for must list at least one purpose")
     if len(dev["path"]) != 3:

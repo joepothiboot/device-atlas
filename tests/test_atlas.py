@@ -26,6 +26,12 @@ class Database(unittest.TestCase):
             self.assertGreaterEqual(len(tc["lowering"]), 2, d["id"])
             self.assertTrue(tc["start_here"] and tc["skill"], d["id"])
 
+    def test_every_device_has_adoption_and_modular_status(self):
+        for d in DEVS:
+            self.assertIn(d["adoption"]["score"], range(6), d["id"])
+            self.assertTrue(d["adoption"]["used_by"] and d["adoption"]["note"], d["id"])
+            self.assertIn(d["modular"]["status"], ("yes", "partial", "none"), d["id"])
+
     def test_every_device_says_what_it_is_used_for(self):
         for d in DEVS:
             self.assertIn(d["segment"], D.SEGMENTS, d["id"])
